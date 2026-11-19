@@ -26,17 +26,44 @@ describe('1. urgency', () => {
     'Achitați până la 03.11',
     'Rezolvăm până la 7 octombrie',
     'Vă rog sunați azi',
-    'Ne auzim astăzi',
-    'Ajung într-o oră',
     'Oferta expiră',
     'Grăbiți-vă',
     'Grăbește-te',
     'Doar 30 min rămase',
     'Spuneți acum',
   ])('fires on "%s"', (text) => expect(flags(text)).toContain('RF_URGENCY'));
-  it.each(['Cu drag, Ana', 'Ne vedem sâmbătă la cafea', 'Mulțumesc pentru ajutor'])('stays quiet on "%s"', (text) =>
-    expect(flags(text)).not.toContain('RF_URGENCY'),
-  );
+  it.each([
+    'Cu drag, Ana',
+    'Ne vedem sâmbătă la cafea',
+    'Mulțumesc pentru ajutor',
+    // a time word in a plain notice or chat, with nothing asked of the reader
+    'Ne auzim astăzi',
+    'Ajung într-o oră',
+  ])('stays quiet on "%s"', (text) => expect(flags(text)).not.toContain('RF_URGENCY'));
+});
+
+describe('1b. urgency needs the reader to be pushed', () => {
+  // Invented for this test: a time word only counts when the same sentence asks the reader to act.
+  it.each([
+    'Confirmați azi comanda, altfel o anulăm.',
+    'Trimiteți-mi acum poza cu buletinul.',
+    'Achitați imediat diferența de 7 lei.',
+    'Trebuie să mergeți astăzi la ghișeu cu actele.',
+    'Te rog răspunde-mi cât mai repede.',
+    'Accesați linkul în 3 ore.',
+    'Contul se închide până la ora 20.',
+    'Codul de acces expiră diseară.',
+  ])('fires on "%s"', (text) => expect(flags(text)).toContain('RF_URGENCY'));
+  it.each([
+    'Comanda dumneavoastră va fi livrată azi între 10 și 14.',
+    'Plata facturii a fost înregistrată astăzi.',
+    'Curierul ajunge peste 2 ore la adresa din comandă.',
+    'Am ajuns acum acasă, totul e bine.',
+    'Livrare în aceeași zi pentru comenzile de azi.',
+    'Programul ghișeului de azi este 9-17.',
+    // the request is in another sentence: the time word stays a notice
+    'Coletul a plecat azi din depozit. Mulțumim că ați comandat.',
+  ])('stays quiet on "%s"', (text) => expect(flags(text)).not.toContain('RF_URGENCY'));
 });
 
 describe('2. payment request', () => {
