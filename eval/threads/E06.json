@@ -1,0 +1,12 @@
+{
+  "id": "E06",
+  "channel": "call_transcript",
+  "sender": { "name": null, "address": "+44 xxx xxx 019", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Bună ziua, sunt de la departamentul tehnic Microsoft. Laptopul dumneavoastră este infectat cu un virus." },
+    { "n": 2, "from": "reader", "text": "Nu știu nimic de asta." },
+    { "n": 3, "from": "sender", "text": "Nu e vina dumneavoastră. Instalați TeamViewer și vă rezolv eu în cinci minute." },
+    { "n": 4, "from": "reader", "text": "Gata, l-am pus." },
+    { "n": 5, "from": "sender", "text": "Acum am nevoie de parola de la internet banking, ca să verificăm tranzacțiile." }
+  ]
+}

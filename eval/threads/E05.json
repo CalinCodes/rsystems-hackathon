@@ -1,0 +1,14 @@
+{
+  "id": "E05",
+  "channel": "whatsapp",
+  "sender": { "name": null, "address": "+40 7xx xxx 645", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Bună bunico, sunt Ioana. Am schimbat numărul, ăsta e cel nou." },
+    { "n": 2, "from": "reader", "text": "Ioana? Ce s-a întâmplat cu celălalt?" },
+    { "n": 3, "from": "sender", "text": "L-am pierdut în tramvai 😢 Tu ce mai faci, ești bine?" },
+    { "n": 4, "from": "reader", "text": "Bine, draga mea." },
+    { "n": 5, "from": "sender", "text": "Bunico, am lovit mașina unui prieten și mi-e foarte frică. Poți să-mi trimiți tu azi banii pentru reparație?" },
+    { "n": 6, "from": "reader", "text": "Vai! Cât costă?" },
+    { "n": 7, "from": "sender", "text": "2.300 lei. Te rog nu-i spune lui mama, o să se supere foarte tare." }
+  ]
+}

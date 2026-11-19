@@ -1,0 +1,8 @@
+{
+  "id": "E07",
+  "channel": "sms",
+  "sender": { "name": null, "address": "+40 7xx xxx 388", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "ANAF: Aveți o datorie restantă de 640 lei. Achitați până mâine pe anaf-plati.online, altfel se aplică poprire pe cont." }
+  ]
+}

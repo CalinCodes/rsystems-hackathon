@@ -1,0 +1,11 @@
+{
+  "id": "E15",
+  "channel": "whatsapp",
+  "sender": { "name": null, "address": "+40 7xx xxx 471", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Bună ziua! Am văzut CV-ul dumneavoastră. Avem un job de acasă: dați like la produse și primiți 150 lei pe zi." },
+    { "n": 2, "from": "reader", "text": "Și ce trebuie să fac?" },
+    { "n": 3, "from": "sender", "text": "Primele sarcini sunt gratuite. Pentru nivelul următor depuneți o garanție de 200 lei, pe care o recuperați imediat." },
+    { "n": 4, "from": "sender", "text": "Locurile se ocupă repede, decideți până diseară." }
+  ]
+}

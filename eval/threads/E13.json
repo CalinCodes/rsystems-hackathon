@@ -1,0 +1,12 @@
+{
+  "id": "E13",
+  "channel": "whatsapp",
+  "sender": { "name": "Mihai (fiul)", "address": "+40 7xx xxx 556", "known_contact": true },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Mamă, am ajuns cu bine la Cluj." },
+    { "n": 2, "from": "reader", "text": "Bravo, puiule." },
+    { "n": 3, "from": "sender", "text": "Ți-am trimis banii pentru medicamente, 300 de lei. Verifică în aplicație." },
+    { "n": 4, "from": "reader", "text": "Mulțumesc mult!" },
+    { "n": 5, "from": "sender", "text": "Te sun diseară. Pupici!" }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "E08",
+  "channel": "email",
+  "sender": { "name": "ANAF", "address": "notificari@anaf.ro", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Vă informăm că declarația unică a fost înregistrată cu succes. Detaliile se găsesc în Spațiul Privat Virtual, pe anaf.ro." }
+  ]
+}

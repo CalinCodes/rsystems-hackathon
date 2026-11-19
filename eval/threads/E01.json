@@ -1,0 +1,12 @@
+{
+  "id": "E01",
+  "channel": "call_transcript",
+  "sender": { "name": null, "address": "+40 3xx xxx 402", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Bună ziua, doamna Popescu? Sunt Radu, de la serviciul clienți al Băncii Dunărea." },
+    { "n": 2, "from": "reader", "text": "Da, eu sunt." },
+    { "n": 3, "from": "sender", "text": "Contul dumneavoastră va fi blocat în 30 de minute, pentru că cineva a încercat să intre în el." },
+    { "n": 4, "from": "reader", "text": "Vai, ce fac acum?" },
+    { "n": 5, "from": "sender", "text": "Liniștiți-vă, rezolvăm împreună. Spuneți-mi codul din SMS-ul pe care tocmai l-ați primit." }
+  ]
+}

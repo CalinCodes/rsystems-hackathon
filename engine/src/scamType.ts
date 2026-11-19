@@ -20,7 +20,8 @@ const COURIER = /\b(?:colet\w*|livrare|curier\w*|awb|vama|expeditie)\b/;
 const MARKET = /\b(?:disponibil\w*|anunt\w*|cumpar\w*|o iau|vand\w*|vanzator\w*|cumparator\w*|avans|produsul|pret\w*|negociabil|olx|piatamea|livrare sigura)\b/;
 const AUTHORITY = /\b(?:politi\w*|parchet\w*|procuror\w*|anaf|dna|amenda|executor\w*|instanta|inspector\w*|fisc\w*|casa (?:nationala )?de pensii|casei de pensii|pensi\w*|ministerul\w*|dgaspc|primaria|prefectura)\b/;
 const TAKEOVER = /\b(?:whatsapp|facebook|instagram|telegram|din greseala|verificare|contul tau|contul dvs)\b/;
-const BANK = /\b(?:banca|bancar\w*|card\w*|tranzactie\w*|3d ?secure|internet banking)\b/;
+// banc\w*: inflected forms count ("Bancii Dunarea", "bancii", "bancile"); a call that names the bank is a bank story.
+const BANK = /\b(?:banc\w*|card\w*|tranzactie\w*|3d ?secure|internet banking)\b/;
 const INVEST = /\b(?:invest\w*|crypto|bitcoin|trading|forex|broker\w*|randament|dobanda|actiuni|portofel)\b/;
 const ROMANCE = /\b(?:te iubesc|dragoste|suflet\w*|relatie|ne intalnim|bilet de avion|militar|platforma petroliera)\b/;
 const JOB = /\b(?:job|angajare|angajam|salariu|recrut\w*|interviu|post vacant|comision|munca)\b/;

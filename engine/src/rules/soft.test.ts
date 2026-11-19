@@ -26,6 +26,10 @@ describe('soft rules', () => {
   it('too good to be true', () => {
     expect(flags('Felicitări! Ați câștigat un voucher')).toContain('RF_TOO_GOOD');
   });
+  it('too good: easy money per day needs an earn verb, a plain price does not fire', () => {
+    expect(flags('Dați like la produse și primiți 150 lei pe zi.')).toContain('RF_TOO_GOOD');
+    expect(flags('Parcarea costă 10 lei pe oră.')).not.toContain('RF_TOO_GOOD');
+  });
   it('threat', () => {
     expect(flags('Cardul dvs. a fost blocat')).toContain('RF_THREAT');
     expect(flags('Veți primi o amendă')).toContain('RF_THREAT');
