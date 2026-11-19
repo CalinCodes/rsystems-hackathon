@@ -1,5 +1,5 @@
 import type { Hit } from '@ss/contracts';
-import { extractUrls } from '../normalize';
+import { extractEmails, extractPhones, extractUrls } from '../normalize';
 import { hostOf, isOfficialHost, ORGS } from './contact';
 import { senderIsAnyOrg } from './sender';
 import { GAP, NOT, firstHit, isDenied, makeHit, perSenderMessage, type MsgCtx, type Rule } from './util';
@@ -23,17 +23,25 @@ const BANK_ACCOUNT_RE = new RegExp(
   'g',
 );
 
-/** At least one link, and every link is on an official catalog domain. */
-function allLinksOfficial(m: MsgCtx): boolean {
+/**
+ * At least one link, every link on an official catalog domain, AND no other way to reach someone: every e-mail address
+ * and phone number in the message must be official too. Otherwise an official link next to "sunati la 0721 ..." would
+ * switch the rule off while still sending the reader to the scammer.
+ */
+function onlyOfficialContacts(m: MsgCtx): boolean {
   const urls = extractUrls(m.raw);
-  return urls.length > 0 && urls.every((u) => ORGS.some((o) => isOfficialHost(hostOf(u), o.site)));
+  if (urls.length === 0) return false;
+  const officialHost = (host: string): boolean => ORGS.some((o) => isOfficialHost(host, o.site));
+  const emailsOk = extractEmails(m.raw).every((e) => officialHost(e.toLowerCase().slice(e.lastIndexOf('@') + 1)));
+  const phonesOk = extractPhones(m.raw).every((p) => ORGS.some((o) => o.phones.includes(p)));
+  return urls.every((u) => officialHost(hostOf(u))) && emailsOk && phonesOk;
 }
 
 function bankAccountAccess(m: MsgCtx, senderVerified: boolean): Hit | null {
   for (const match of m.norm.matchAll(BANK_ACCOUNT_RE)) {
     const idx = match.index ?? 0;
     if (isDenied(m.norm, idx)) continue;
-    if (senderVerified || allLinksOfficial(m)) continue;
+    if (senderVerified || onlyOfficialContacts(m)) continue;
     return makeHit('RF_DATA_REQUEST', m, idx, match[0].length);
   }
   return null;

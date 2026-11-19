@@ -238,3 +238,36 @@ describe('review round: trust only what the attacker cannot write', () => {
     expect(flags(login, { name: 'Banca Dunărea', address: '+40 721 555 000' })).toContain('RF_DATA_REQUEST');
   });
 });
+
+describe('review round 3: only the ADDRESS vouches, and only whole-address matches', () => {
+  const login = 'Intrați în contul Banca Dunărea și confirmați';
+  const shop = 'MegaShop: comanda dvs. a fost expediată';
+
+  it('an e-mail sender is judged by its domain only: name and local part are free text', () => {
+    expect(flags(login, { name: 'Banca Dunărea', address: 'support@evil.xyz' })).toContain('RF_DATA_REQUEST');
+    expect(flags(login, { address: 'bancadunarea@evil.xyz' })).toContain('RF_DATA_REQUEST');
+    expect(flags(login, { address: 'notificari@bancadunarea.ro' })).not.toContain('RF_DATA_REQUEST');
+    expect(flags(login, { address: 'notificari@alerte.bancadunarea.ro' })).not.toContain('RF_DATA_REQUEST');
+  });
+  it('a display name with no address verifies nothing', () => {
+    expect(flags(login, { name: 'Banca Dunărea' })).toContain('RF_DATA_REQUEST');
+    expect(flags(login, { name: 'Banca Dunărea', address: null })).toContain('RF_DATA_REQUEST');
+  });
+  it('a phone address must be exactly one catalog number, not "the first number found"', () => {
+    const twoNumbers = thread([['sender', shop]], { address: '0800 500 600 0721 555 000' });
+    expect(flagsOf(twoNumbers)).toContain('RF_IMPERSONATION');
+    const withPrefix = thread([['sender', shop]], { address: '+40 800 500 600' });
+    expect(flagsOf(withPrefix)).not.toContain('RF_IMPERSONATION');
+    const catalogNational = thread([['sender', shop]], { address: '0800 500 600' });
+    expect(flagsOf(catalogNational)).not.toContain('RF_IMPERSONATION');
+  });
+  it('an official link does not exempt a message that also gives a foreign phone number or e-mail', () => {
+    expect(flags('Intrați în contul de bancă pe bancadunarea.ro')).not.toContain('RF_DATA_REQUEST');
+    expect(flags('Intrați în contul de bancă pe bancadunarea.ro sau sunați la 0721 555 000')).toContain('RF_DATA_REQUEST');
+    expect(flags('Intrați în contul de bancă pe bancadunarea.ro sau scrieți la ajutor@evil.xyz')).toContain('RF_DATA_REQUEST');
+  });
+  it('official link plus the catalog phone and e-mail is still exempt', () => {
+    expect(flags('Intrați în contul de bancă pe bancadunarea.ro sau sunați la 0800 100 200')).not.toContain('RF_DATA_REQUEST');
+    expect(flags('Intrați în contul de bancă pe bancadunarea.ro, scrieți la suport@bancadunarea.ro')).not.toContain('RF_DATA_REQUEST');
+  });
+});

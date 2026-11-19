@@ -1,5 +1,5 @@
 import type { Scenario } from '@ss/contracts';
-import { extractPhones, normalizeText } from '../normalize';
+import { normalizeText } from '../normalize';
 import { ORGS, isOfficialHost, type Org } from './contact';
 
 type Sender = Scenario['sender'];
@@ -8,22 +8,37 @@ export const isPhoneNumber = (address: string | null): boolean =>
   address !== null && /^[+\d\s().-]+$/.test(address) && address.replace(/\D/g, '').length >= 9;
 
 /**
- * Is the sender verifiably this organisation?
- *
- * A display name is free text: anyone can call themselves "MegaShop" next to a private number, so for a PHONE sender
- * only the catalog's own numbers count. Otherwise (alphanumeric id, e-mail) the id or the official domain counts.
- * Caveat: an alphanumeric SMS sender id cannot be verified offline, so a matching one is trusted as the best
- * available signal; messages from it are still judged by their links, numbers and requests.
+ * The WHOLE address as one national-form number ("+40 800 500 600" -> "0800500600"), or null if it is not exactly one.
+ * Not extractPhones()[0]: that would accept "0800 500 600 0721 555 000" as the first number and ignore the rest.
+ */
+function wholeAddressAsNumber(address: string): string | null {
+  const digits = address.replace(/\D/g, '');
+  if (address.trim().startsWith('+40')) return digits.startsWith('40') ? `0${digits.slice(2)}` : null;
+  if (digits.startsWith('0040')) return `0${digits.slice(4)}`;
+  return digits.startsWith('0') ? digits : null;
+}
+
+/**
+ * Is the sender verifiably this organisation? Only the sender's ADDRESS can vouch, never the display name:
+ *  - phone number: exactly one number, and it is one of the catalog's own numbers;
+ *  - e-mail: the domain after the last "@" is the official site or a subdomain (display name and local part are free
+ *    text: "megashop@evil.xyz" proves nothing);
+ *  - anything else is an alphanumeric SMS sender id, which counts when it names the organisation.
+ * Caveat: an alphanumeric sender id cannot be verified offline and real SMS ids can be spoofed. It is trusted as the
+ * best signal available; the message is still judged by its links, numbers and requests.
  */
 export function senderIsOrg(s: Sender, org: Org): boolean {
-  if (isPhoneNumber(s.address)) {
-    const number = extractPhones(s.address ?? '')[0];
-    return number !== undefined && org.phones.includes(number);
+  const address = s.address;
+  if (address === null || address.trim() === '') return false;
+  if (isPhoneNumber(address)) {
+    const number = wholeAddressAsNumber(address);
+    return number !== null && org.phones.includes(number);
   }
-  const address = s.address ?? '';
-  if (org.nameRe.test(normalizeText(`${s.name ?? ''} ${address}`))) return true;
-  const domain = address.includes('@') ? address.toLowerCase().slice(address.lastIndexOf('@') + 1) : '';
-  return domain !== '' && isOfficialHost(domain, org.site);
+  if (address.includes('@')) {
+    const domain = address.toLowerCase().slice(address.lastIndexOf('@') + 1);
+    return domain !== '' && isOfficialHost(domain, org.site);
+  }
+  return org.nameRe.test(normalizeText(address));
 }
 
 /** True when the sender is verifiably ANY catalog organisation. */
