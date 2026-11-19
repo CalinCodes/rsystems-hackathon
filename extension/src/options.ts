@@ -47,8 +47,9 @@ async function onTest(): Promise<void> {
   try {
     await sendPage(c, { scamType: 'OTHER' }, { test: true });
     status('Test trimis. Verificați telefonul.');
-  } catch {
-    status('Nu am putut trimite. Verificați că serverul ntfy rulează și că sunteți în aceeași rețea.');
+  } catch (e) {
+    const limited = e instanceof Error && e.message === 'ntfy 429';
+    status(limited ? 'ntfy.sh a refuzat: prea multe alerte de pe această rețea azi (limită 250 pe zi). Folosiți hotspotul telefonului sau un server ntfy propriu.' : 'Nu am putut trimite. Verificați conexiunea la internet.');
   }
 }
 
@@ -67,5 +68,7 @@ void loadLast().then((l) => {
   $('last').textContent =
     l.outcome === 'sent'
       ? `Ultima alertă: trimisă la ${time(l.at)}.`
-      : `Ultima alertă: NU a putut fi trimisă la ${time(l.at)} (${l.attempts} încercări, ${l.error ?? 'eroare'}). Verificați internetul.`;
+      : l.error === 'ntfy 429'
+        ? `Ultima alertă (${time(l.at)}) a fost refuzată de ntfy.sh: prea multe alerte de pe această rețea azi. Folosiți altă rețea (de ex. hotspot) sau un server ntfy propriu.`
+        : `Ultima alertă: NU a putut fi trimisă la ${time(l.at)} (${l.error ?? 'eroare'}). Verificați internetul.`;
 });

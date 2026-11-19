@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Result } from '@ss/contracts';
-import { checkConfig, COOLDOWN_MS, decidePage, EMPTY_PAGER, isLocalHost, pagerPayload, sendPage, sendWithRetry, type PagerConfig } from './pager';
+import { checkConfig, COOLDOWN_MS, decidePage, EMPTY_PAGER, isLocalHost, pagerPayload, sendPage, type PagerConfig } from './pager';
 
 const cfg: PagerConfig = { enabled: true, server: 'http://192.168.1.20:8090', topic: 'familia-pop-7k2', name: 'Mama' };
 const r = (verdict: Result['verdict'], scamType: Result['scamType'] = 'BANK_IMPERSONATION') => ({ verdict, scamType }) as Result;
@@ -42,23 +42,6 @@ describe('pager', () => {
     expect(decidePage(mark, r('SCAM'), 'm1', t + 10 * COOLDOWN_MS)).toBe('not_new'); // chat reopened, nothing new
     expect(decidePage(mark, r('SCAM'), 'm2', t + 1_000)).toBe('cooldown'); // scammer keeps typing
     expect(decidePage(mark, r('SCAM'), 'm2', t + COOLDOWN_MS)).toBe('page'); // a new scam message later
-  });
-
-  it('retries network errors and 429/5xx, not other 4xx', async () => {
-    const sleep = async () => undefined;
-    let n = 0;
-    const flaky = async () => {
-      n += 1;
-      if (n < 3) throw new Error(n === 1 ? 'Failed to fetch' : 'ntfy 429');
-    };
-    expect(await sendWithRetry(flaky, sleep)).toEqual({ ok: true, attempts: 3 });
-    let m = 0;
-    const bad = async () => {
-      m += 1;
-      throw new Error('ntfy 400');
-    };
-    expect((await sendWithRetry(bad, sleep)).ok).toBe(false);
-    expect(m).toBe(1);
   });
 
   it('payload has name, time and type in plain words, and nothing from the chat', () => {

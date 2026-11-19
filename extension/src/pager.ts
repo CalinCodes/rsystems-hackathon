@@ -94,29 +94,6 @@ export function decidePage(mark: PageMark | undefined, r: Pick<Result, 'verdict'
   return 'page';
 }
 
-/** Retry on network errors, HTTP 429 and 5xx; give up at once on other 4xx (bad config). */
-export const RETRY_DELAYS_MS = [0, 2_000, 5_000];
-
-export async function sendWithRetry(
-  send: () => Promise<void>,
-  sleep: (ms: number) => Promise<void> = (ms) => new Promise((res) => setTimeout(res, ms)),
-): Promise<{ ok: true; attempts: number } | { ok: false; attempts: number; error: string }> {
-  let last = 'unknown';
-  for (let i = 0; i < RETRY_DELAYS_MS.length; i++) {
-    await sleep(RETRY_DELAYS_MS[i] ?? 0);
-    try {
-      await send();
-      return { ok: true, attempts: i + 1 };
-    } catch (e) {
-      last = e instanceof Error ? e.message : 'unknown';
-      const status = /^ntfy (\d{3})$/.exec(last)?.[1];
-      if (status !== undefined && status !== '429' && !status.startsWith('5')) break;
-      if (last.startsWith('pager config')) break;
-    }
-  }
-  return { ok: false, attempts: RETRY_DELAYS_MS.length, error: last };
-}
-
 const hhmm = (d: Date): string => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
 /** ntfy JSON publish body (JSON, not headers: header values cannot carry Romanian diacritics). */
