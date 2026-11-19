@@ -1,74 +1,216 @@
-# Kiro 2 scam types: family, investment, romance, job, prize, other — each with SAFE look-alikes.
-# Uses only slots defined in ../slots.yaml (owner: Kiro 1). Fictional values only.
+# Kiro 2 templates: family, investment, romance, job, prize, other (+ SAFE look-alikes,
+# SAFE hard negatives and harmless thread openers). Uses only slots from ../slots.yaml.
+#
+# Label rules for SCAM templates (a cue in the text means the flag must be listed):
+#   {fake_link}                                         -> RF_SUSPICIOUS_CONTACT
+#   organisation name speaks as the sender              -> RF_IMPERSONATION
+#   azi / acum / urgent / în {deadline} / locuri limitate / expiră -> RF_URGENCY
+#   blocat / suspendat / deconectăm / amendă / dosar / virus       -> RF_THREAT
+#   negated or warning-only mention ("nu comunicați codul")        -> no request flag
+#
+# HARD NEGATIVES and OPENERS are the exception on purpose: hard negatives contain the cue words
+# (money, code, accident, urgency, link) yet carry flags [] so the model learns that context
+# decides, not keywords. Openers are the harmless first message of a scam thread: type is the
+# scam it opens, flags only what is literally present.
 
-# --- FAMILY_EMERGENCY ---
+# ======================= FAMILY_EMERGENCY =======================
 - type: FAMILY_EMERGENCY
   flags: [RF_NEW_NUMBER, RF_PAYMENT_REQUEST, RF_URGENCY, RF_SECRECY]
   text: "Mamă, sunt {family_name}, am alt număr: {phone_unknown}. Trimite-mi {amount} urgent și nu spune nimănui."
 - type: FAMILY_EMERGENCY
   flags: [RF_NEW_NUMBER, RF_PAYMENT_REQUEST, RF_EMOTIONAL_PRESSURE]
   text: "Tata, am avut un accident cu mașina, telefonul meu e stricat. Te rog trimite {amount} pe numărul ăsta nou: {phone_unknown}."
-# SAFE look-alike: real relative, no money, no new number, no secrecy
-- type: NONE
-  flags: []
-  text: "Bună mamă, sunt {family_name}. Ajung la cină pe la ora 7, aduc eu pâine. Pa!"
+- type: FAMILY_EMERGENCY
+  flags: [RF_NEW_NUMBER, RF_URGENCY, RF_PAYMENT_REQUEST, RF_SECRECY]
+  text: "Salut tată, sunt {family_name}. Mi-am pierdut telefonul și scriu de la un număr nou, {phone_unknown}. Sunt la poliție și am nevoie acum de {amount} pentru o taxă. Nu-i spune mamei, o sperii."
+- type: FAMILY_EMERGENCY
+  flags: [RF_NEW_NUMBER, RF_PAYMENT_REQUEST, RF_SECRECY]
+  text: "Bunicule, sunt nepotul dvs., {family_name}. Am un număr nou, {phone_unknown}. Am nevoie de {amount} pentru o problemă grea, vă rog nu spuneți părinților."
+- type: FAMILY_EMERGENCY
+  flags: [RF_PAYMENT_REQUEST, RF_URGENCY, RF_SUSPICIOUS_CONTACT]
+  text: "Mamă, sunt {family_name}. Am rămas fără bani pe card, plătește-mi biletul acum pe {fake_link}"
 
-# --- INVESTMENT ---
+# ======================= INVESTMENT =======================
 - type: INVESTMENT
-  flags: [RF_TOO_GOOD, RF_URGENCY, RF_PAYMENT_REQUEST]
+  flags: [RF_TOO_GOOD, RF_URGENCY, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT]
   text: "Investiție garantată: dublați {amount} în 7 zile. Locuri limitate, înscrieți-vă în {deadline}: {fake_link}"
 - type: INVESTMENT
   flags: [RF_TOO_GOOD, RF_SUSPICIOUS_CONTACT, RF_PAYMENT_REQUEST]
   text: "Profit sigur de 300% din criptomonede. Depuneți {amount} și vă contactăm noi. Scrieți la {fake_link}"
-# SAFE look-alike: legitimate account statement, no promise, no deposit request
-- type: NONE
-  flags: []
-  text: "Raportul lunar al contului dvs. de economii este disponibil. Consultați-l oricând pe {official_link}."
+- type: INVESTMENT
+  flags: [RF_TOO_GOOD, RF_PAYMENT_REQUEST, RF_CHANNEL_SWITCH]
+  text: "Salut, un prieten de-al meu a făcut 10.000 lei într-o lună cu platforma asta de criptomonede. Bagă și tu {amount}, câștigul e sigur. Scrie-mi pe WhatsApp și îți dau detalii."
+- type: INVESTMENT
+  flags: [RF_IMPERSONATION, RF_TOO_GOOD, RF_PAYMENT_REQUEST, RF_URGENCY]
+  text: "Bună ziua, sunt consultant la {bank}. Vă oferim un depozit special cu dobândă de 40% pe an, fără risc. Pentru a rezerva locul, virați {amount} azi."
+- type: INVESTMENT
+  flags: [RF_TOO_GOOD, RF_URGENCY, RF_PAYMENT_REQUEST]
+  text: "Ultima șansă! Dacă investiți {amount} acum, primiți dublu. Oferta expiră în {deadline}."
 
-# --- ROMANCE ---
+# ======================= ROMANCE =======================
 - type: ROMANCE
   flags: [RF_EMOTIONAL_PRESSURE, RF_PAYMENT_REQUEST, RF_SECRECY]
   text: "Dragostea mea, nu am mai întâlnit pe nimeni ca tine. Am o problemă cu viza și am nevoie de {amount}. Să rămână între noi."
 - type: ROMANCE
   flags: [RF_EMOTIONAL_PRESSURE, RF_NEW_NUMBER, RF_PAYMENT_REQUEST]
-  text: "Te iubesc. Îți scriu de pe alt număr {phone_unknown} pentru că mi s-a blocat cardul. Poți trimite {amount}?"
-# SAFE look-alike: friendly message from a known person, no money, no secrecy
-- type: NONE
-  flags: []
-  text: "Mi-a făcut mare plăcere cafeaua de azi. Ne mai vedem săptămâna viitoare? Spor la treabă!"
+  text: "Te iubesc. Îți scriu de pe alt număr {phone_unknown} pentru că mi s-a stricat cardul. Poți trimite {amount}?"
+- type: ROMANCE
+  flags: [RF_EMOTIONAL_PRESSURE, RF_CHANNEL_SWITCH]
+  text: "Bună, scumpo. Sunt medic pe o navă și nu am semnal bun. Hai să vorbim pe WhatsApp, aici nu pot să-ți scriu liber. Simt că te cunosc de o viață."
+- type: ROMANCE
+  flags: [RF_EMOTIONAL_PRESSURE, RF_PAYMENT_REQUEST]
+  text: "Stimată doamnă, sufletul dvs. m-a cucerit de la prima conversație. Vă rog, ajutați-mă cu {amount} pentru biletul de avion și vă promit că vom fi împreună."
+- type: ROMANCE
+  flags: [RF_EMOTIONAL_PRESSURE, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT, RF_SECRECY]
+  text: "Iubire, am luat biletul ca să vin la tine, dar trebuie să plătești taxa de {amount} aici: {fake_link} Nu spune nimănui, vreau să fie surpriză."
 
-# --- JOB_OFFER ---
+# ======================= JOB_OFFER =======================
 - type: JOB_OFFER
-  flags: [RF_TOO_GOOD, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT]
+  flags: [RF_TOO_GOOD, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT, RF_URGENCY]
   text: "Angajăm de acasă, {amount} pe zi, fără experiență. Plătiți taxa de activare și începeți azi: {fake_link}"
 - type: JOB_OFFER
-  flags: [RF_TOO_GOOD, RF_DATA_REQUEST, RF_URGENCY]
+  flags: [RF_TOO_GOOD, RF_DATA_REQUEST, RF_URGENCY, RF_SUSPICIOUS_CONTACT]
   text: "Felicitări, ați fost selectat pentru un post bine plătit. Trimiteți CNP și date cont în {deadline} aici: {fake_link}"
-# SAFE look-alike: real recruiter, official site, no fee, no data over chat
+- type: JOB_OFFER
+  flags: [RF_IMPERSONATION, RF_TOO_GOOD, RF_DATA_REQUEST]
+  text: "{courier}: Căutăm curieri cu program flexibil. Câștigați {amount} pe zi. Trimiteți-ne seria buletinului și IBAN-ul ca să vă facem contractul."
+- type: JOB_OFFER
+  flags: [RF_TOO_GOOD, RF_CHANNEL_SWITCH]
+  text: "Salut! Ai chef de un job ușor, 200 lei pe oră, de pe telefon? Scrie-mi pe WhatsApp."
+- type: JOB_OFFER
+  flags: [RF_TOO_GOOD, RF_PAYMENT_REQUEST]
+  text: "Ați fost angajat cu salariu de 8.000 lei, fără interviu. Pentru uniformă și instruire, virați {amount} în contul nostru înainte de prima zi de lucru."
+
+# ======================= PRIZE_LOTTERY =======================
+- type: PRIZE_LOTTERY
+  flags: [RF_TOO_GOOD, RF_URGENCY, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "Ați câștigat {amount}! Pentru a ridica premiul plătiți taxa de livrare în {deadline}: {fake_link}"
+- type: PRIZE_LOTTERY
+  flags: [RF_IMPERSONATION, RF_TOO_GOOD, RF_DATA_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "{shop}: Sunteți câștigătorul tombolei! Confirmați datele contului pentru a primi premiul: {fake_link}"
+- type: PRIZE_LOTTERY
+  flags: [RF_TOO_GOOD, RF_DATA_REQUEST]
+  text: "Felicitări! Ai câștigat un telefon nou. Răspunde cu numele și adresa ta ca să ți-l trimitem."
+- type: PRIZE_LOTTERY
+  flags: [RF_IMPERSONATION, RF_TOO_GOOD, RF_URGENCY, RF_PAYMENT_REQUEST]
+  text: "{shop}: La tragerea la sorți de azi, numărul dvs. a fost extras. Pentru a primi voucherul de {amount}, achitați o taxă de procesare de 15 lei prin transfer."
+- type: PRIZE_LOTTERY
+  flags: [RF_TOO_GOOD, RF_CODE_REQUEST, RF_URGENCY]
+  text: "Ați câștigat o excursie! Pentru confirmare, trimiteți-ne codul pe care îl veți primi prin mesaj, în {deadline}."
+
+# ======================= OTHER =======================
+- type: OTHER
+  flags: [RF_URGENCY, RF_PAYMENT_REQUEST, RF_THREAT, RF_SUSPICIOUS_CONTACT]
+  text: "Factura la curent este restantă. Dacă nu plătiți {amount} în {deadline}, vă deconectăm. Plată aici: {fake_link}"
+- type: OTHER
+  flags: [RF_DATA_REQUEST, RF_URGENCY, RF_THREAT, RF_SUSPICIOUS_CONTACT]
+  text: "Verificare de securitate: confirmați adresa și data nașterii în {deadline} sau contul va fi suspendat: {fake_link}"
+- type: OTHER
+  flags: [RF_PAYMENT_REQUEST, RF_URGENCY, RF_EMOTIONAL_PRESSURE]
+  text: "Bună! Strângem bani pentru un copil bolnav, orice sumă ajută. Trimite {amount} acum la contul din mesajul următor."
+- type: OTHER
+  flags: [RF_TOO_GOOD, RF_PAYMENT_REQUEST, RF_URGENCY]
+  text: "Apartament de închiriat, preț foarte mic. Pentru a-l rezerva trimiteți un avans de {amount} înainte de vizionare, nu mai avem decât azi."
+- type: OTHER
+  flags: [RF_PAYMENT_REQUEST]
+  text: "Bună ziua, am găsit un portofel cu actele dvs. Trimiteți {amount} pentru transport și vi-l aduc."
+
+# ======================= SAFE look-alikes (one per type above) =======================
+- type: NONE
+  flags: []
+  text: "Bună mamă, sunt {family_name}. Ajung la cină pe la ora 7, aduc eu pâine. Pa!"
+- type: NONE
+  flags: []
+  text: "Raportul lunar al contului dvs. de economii este disponibil. Consultați-l oricând pe {official_link}."
+- type: NONE
+  flags: []
+  text: "Mi-a făcut mare plăcere cafeaua de ieri. Ne mai vedem săptămâna viitoare? Spor la treabă!"
 - type: NONE
   flags: []
   text: "Bună ziua, am primit CV-ul dvs. Vă invităm la un interviu. Detalii pe pagina oficială {official_link}."
-
-# --- PRIZE_LOTTERY ---
-- type: PRIZE_LOTTERY
-  flags: [RF_TOO_GOOD, RF_URGENCY, RF_PAYMENT_REQUEST]
-  text: "Ați câștigat {amount}! Pentru a ridica premiul plătiți taxa de livrare în {deadline}: {fake_link}"
-- type: PRIZE_LOTTERY
-  flags: [RF_TOO_GOOD, RF_DATA_REQUEST, RF_SUSPICIOUS_CONTACT]
-  text: "{shop}: Sunteți câștigătorul tombolei! Confirmați datele contului pentru a primi premiul: {fake_link}"
-# SAFE look-alike: loyalty points info you asked for, from official site, no fee
 - type: NONE
   flags: []
   text: "{shop}: Aveți 120 de puncte de fidelitate. Le puteți folosi la următoarea comandă pe {official_link}."
-
-# --- OTHER ---
-- type: OTHER
-  flags: [RF_URGENCY, RF_PAYMENT_REQUEST, RF_THREAT]
-  text: "Factura la curent este restantă. Dacă nu plătiți {amount} în {deadline}, vă deconectăm. Plată aici: {fake_link}"
-- type: OTHER
-  flags: [RF_DATA_REQUEST, RF_URGENCY, RF_SUSPICIOUS_CONTACT]
-  text: "Verificare de securitate: confirmați adresa și data nașterii în {deadline} sau contul va fi suspendat: {fake_link}"
-# SAFE look-alike: ordinary reminder, no payment, no data, official channel
 - type: NONE
   flags: []
   text: "Vă reamintim programarea de mâine la ora 10. Pentru reprogramare sunați la numărul de pe {official_link}."
+
+# ======================= SAFE HARD NEGATIVES =======================
+# Genuine messages that MENTION money, codes, accidents, urgency or links but request nothing dangerous.
+- type: NONE
+  flags: []
+  text: "Mamă, ți-am trimis înapoi cei {amount} pe care mi-i împrumutaseși. Verifică în cont, să fii sigură."
+- type: NONE
+  flags: []
+  text: "{bank}: Plata de {amount} a fost efectuată cu succes din contul dvs. Dacă nu o recunoașteți, sunați la numărul de pe spatele cardului."
+- type: NONE
+  flags: []
+  text: "{bank}: Codul dvs. de confirmare este {code}. Nu îl comunicați nimănui, nici angajaților băncii."
+- type: NONE
+  flags: []
+  text: "{courier}: Coletul dvs. ajunge mâine între 10 și 14. Urmăriți livrarea pe {official_link}."
+- type: NONE
+  flags: []
+  text: "Am avut un mic accident cu bicicleta, dar sunt bine, nu-ți face griji. Te sun diseară."
+- type: NONE
+  flags: []
+  text: "Mamă, sună-mă acum când ajungi acasă, e ceva important de la școală."
+- type: NONE
+  flags: []
+  text: "{bank}: Soldul contului dvs. a fost actualizat. Detalii în aplicația oficială sau pe {official_link}."
+- type: NONE
+  flags: []
+  text: "{bank}: Atenție la mesajele false. Banca nu vă cere niciodată codul primit prin mesaj sau parola."
+- type: NONE
+  flags: []
+  text: "{authority}: Declarația dvs. a fost primită. Puteți verifica stadiul pe {official_link}."
+- type: NONE
+  flags: []
+  text: "Tată, am primit {amount} de la tine, mulțumesc mult! Îți aduc cadoul duminică."
+- type: NONE
+  flags: []
+  text: "{shop}: Comanda dvs. a fost expediată și ajunge în 2 zile. Detalii pe {official_link}."
+- type: NONE
+  flags: []
+  text: "{bank}: Cardul dvs. expiră luna viitoare. Noul card va fi trimis prin poștă, nu trebuie să faceți nimic."
+- type: NONE
+  flags: []
+  text: "Salut, ți-am trimis codul de la apartament: {code}. Îl schimb luni, deci intră până atunci."
+- type: NONE
+  flags: []
+  text: "Mamă, am întârziat din cauza unui accident pe drum, dar eu sunt bine. Ajung la 8."
+- type: NONE
+  flags: []
+  text: "Vă reamintim că programarea dvs. este azi la ora 15. Vă așteptăm la clinică."
+- type: NONE
+  flags: []
+  text: "{bank}: Nu vă vom cere niciodată să plătiți prin mesaj. Pentru orice nelămurire, sunați la numărul de pe spatele cardului."
+- type: NONE
+  flags: []
+  text: "{authority}: Amenda de {amount} a fost achitată, nu mai aveți nimic de plătit."
+
+# ======================= THREAD OPENERS (harmless first messages of scams) =======================
+- type: FAMILY_EMERGENCY
+  flags: [RF_NEW_NUMBER]
+  text: "Bună mami, ăsta e numărul meu nou."
+- type: FAMILY_EMERGENCY
+  flags: [RF_NEW_NUMBER]
+  text: "Salut tată, mi-am schimbat telefonul. Salvează-mi numărul {phone_unknown}."
+- type: MARKETPLACE
+  flags: []
+  text: "Bună ziua, mai este disponibil anunțul?"
+- type: BANK_IMPERSONATION
+  flags: [RF_IMPERSONATION]
+  text: "Bună ziua, sunt de la {bank}, facem o actualizare."
+- type: ROMANCE
+  flags: []
+  text: "Bună, te-am văzut în grupul de pasionați de grădinărit. Pot să-ți scriu?"
+- type: JOB_OFFER
+  flags: []
+  text: "Bună ziua, am găsit CV-ul dvs. și avem un post potrivit pentru dvs."
+- type: PRIZE_LOTTERY
+  flags: [RF_IMPERSONATION]
+  text: "{shop}: Aveți un mesaj nou despre contul dvs. de client."
+- type: INVESTMENT
+  flags: []
+  text: "Bună ziua, aveți un minut să vă povestesc despre o oportunitate?"

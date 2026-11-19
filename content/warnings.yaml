@@ -1,186 +1,237 @@
 # Scam Shield — warning texts (owner: Kiro 2).
 #
-# Keyed by scamType, then by the strongest flag in the thread. buildWarning() picks
-# warnings[scamType][strongestFlag]; if that flag has no entry it falls back to
-# warnings[scamType]._default.
+# The engine assembles EXACTLY 3 sentences:   lead[verdict]  +  ro  +  action
+#   lead    : top-level `lead` (RO) / `lead_en` (EN), keyed by verdict SCAM | SUSPICIOUS.
+#             SAFE has no lead: use `ro` + `action` only.
+#   ro / en : ONE short sentence, what is happening + why. Never starts with "Atenție".
+#   action  : ONE sentence, the single next step (RO only, same as Result.warning.action).
 #
-# Rules (CLAUDE.md): Romanian first, formal "dumneavoastră", max 3 short sentences,
-# no jargon. Exactly one action via an OFFICIAL channel from contracts/catalog.json.
-# Never repeat a link or phone number that appeared in the message.
+# Lookup: warnings[scamType][strongestFlag], else warnings[scamType]._default.
 #
-# Official channels available (contracts/catalog.json):
-#   Banca Dunărea  — 0800 100 200 / bancadunarea.ro
-#   CurierExpres   — 0800 300 400 / curierexpres.ro
-#   PiațaMea       — piatamea.ro (no phone)
-#   MegaShop       — 0800 500 600 / megashop.ro
-#   ANAF           — 031 403 91 60 / anaf.ro
+# {official_contact}  : placeholder inside `action`. The engine replaces it with the PHONE NUMBER
+#   of the catalog organisation actually being impersonated (contracts/catalog.json), e.g.
+#   "sunați banca la {official_contact}" -> "sunați banca la 0800 100 200".
+#   If no organisation is detected, or it has no phone (PiațaMea), the engine uses the type's
+#   `action_fallback` instead. Types without an organisation never use the placeholder, and
+#   their `action_fallback` equals their `action`.
+#
+# Rules (CLAUDE.md): Romanian first, formal "dumneavoastră", plain words ("adresa de internet",
+# not "link"), never repeat a link or number from the message.
+
+lead:
+  SCAM: "Atenție, pare o țeapă!"
+  SUSPICIOUS: "Atenție, verificați înainte să răspundeți."
+lead_en:
+  SCAM: "Warning, this looks like a scam!"
+  SUSPICIOUS: "Warning, check before you reply."
 
 BANK_IMPERSONATION:
+  action_fallback: "Nu răspundeți și sunați la numărul de pe spatele cardului."
   _default:
-    ro: "Atenție! Acest mesaj pare o înșelătorie bancară. O bancă adevărată nu vă cere date sau coduri așa. Nu apăsați niciun link."
-    en: "Warning! This looks like a bank scam. A real bank never asks for your details or codes this way. Do not tap any link."
-    action: "Sunați Banca Dunărea la 0800 100 200, numărul de pe cardul dumneavoastră."
+    ro: "Mesajul se dă drept banca dumneavoastră, dar o bancă adevărată nu cere așa ceva."
+    en: "The message poses as your bank, but a real bank does not ask for this."
+    action: "Nu răspundeți și sunați banca la {official_contact}."
   RF_CODE_REQUEST:
-    ro: "Atenție! Cineva se dă drept banca dumneavoastră și vă cere un cod. Niciun angajat real nu cere coduri. Nu spuneți codul nimănui."
-    en: "Warning! Someone is posing as your bank and asking for a code. No real employee asks for codes. Do not tell the code to anyone."
-    action: "Sunați Banca Dunărea la 0800 100 200, numărul de pe cardul dumneavoastră."
+    ro: "Cineva se dă drept banca dumneavoastră și vă cere un cod, iar cu acel cod vă poate lua banii."
+    en: "Someone poses as your bank and asks for a code, and with that code they can take your money."
+    action: "Nu spuneți codul nimănui și sunați banca la {official_contact}."
   RF_THREAT:
-    ro: "Atenție! Mesajul vă sperie ca să acționați repede. Banca nu blochează conturi prin SMS cu linkuri. Nu apăsați nimic."
-    en: "Warning! The message scares you into acting fast. A bank does not block accounts via SMS links. Do not tap anything."
-    action: "Sunați Banca Dunărea la 0800 100 200, numărul de pe cardul dumneavoastră."
+    ro: "Mesajul vă sperie cu blocarea contului ca să acționați repede, dar banca nu lucrează așa."
+    en: "The message scares you with a blocked account so you act fast, but a bank does not work this way."
+    action: "Nu apăsați nimic și sunați banca la {official_contact}."
   RF_DATA_REQUEST:
-    ro: "Atenție! Cineva cere datele contului dumneavoastră. Banca nu cere niciodată așa ceva prin mesaj. Nu trimiteți nicio informație."
-    en: "Warning! Someone is asking for your account details. A bank never asks for these by message. Do not send any information."
-    action: "Sunați Banca Dunărea la 0800 100 200, numărul de pe cardul dumneavoastră."
+    ro: "Mesajul vă cere datele contului, iar banca adevărată nu le cere niciodată prin mesaj."
+    en: "The message asks for your account details, and a real bank never asks for them by message."
+    action: "Nu trimiteți nimic și sunați banca la {official_contact}."
+  RF_SUSPICIOUS_CONTACT:
+    ro: "Mesajul se dă drept banca dumneavoastră, dar adresa de internet este falsă."
+    en: "The message poses as your bank, but the web address is fake."
+    action: "Nu apăsați pe ea; sunați banca la {official_contact}."
 
 COURIER_FEE:
+  action_fallback: "Nu plătiți nimic și căutați singur numărul firmei pe site-ul ei oficial."
   _default:
-    ro: "Atenție! Acest mesaj pare o înșelătorie cu un colet. Vi se cere o taxă printr-un link fals. Nu plătiți și nu apăsați linkul."
-    en: "Warning! This looks like a parcel scam. It asks for a fee through a fake link. Do not pay and do not tap the link."
-    action: "Sunați CurierExpres la 0800 300 400 ca să verificați coletul."
+    ro: "Mesajul se dă drept firma de curierat și cere bani, dar un curier adevărat nu cere plata așa."
+    en: "The message poses as a courier and asks for money, but a real courier does not ask for payment this way."
+    action: "Nu plătiți nimic și sunați firma de curierat la {official_contact}."
   RF_PAYMENT_REQUEST:
-    ro: "Atenție! Vi se cere o taxă mică pentru un colet. Așa fură escrocii datele cardului. Nu plătiți prin acel link."
-    en: "Warning! You are asked for a small parcel fee. This is how scammers steal card details. Do not pay through that link."
-    action: "Sunați CurierExpres la 0800 300 400 ca să verificați coletul."
+    ro: "Vi se cere o taxă mică pentru un colet, dar așa încearcă escrocii să afle datele cardului."
+    en: "You are asked for a small parcel fee, but this is how scammers try to learn your card details."
+    action: "Nu plătiți și sunați firma de curierat la {official_contact}."
+  RF_SUSPICIOUS_CONTACT:
+    ro: "Mesajul se dă drept firma de curierat, dar adresa de internet este falsă."
+    en: "The message poses as a courier, but the web address is fake."
+    action: "Nu apăsați pe ea; sunați firma de curierat la {official_contact}."
 
 AUTHORITY_IMPERSONATION:
+  action_fallback: "Nu răspundeți și căutați singur numărul instituției pe site-ul ei oficial."
   _default:
-    ro: "Atenție! Cineva se dă drept o autoritate ca să vă sperie. Instituțiile nu cer bani sau date prin mesaj. Nu răspundeți."
-    en: "Warning! Someone is posing as an authority to scare you. Institutions do not ask for money or data by message. Do not reply."
-    action: "Sunați ANAF la 031 403 91 60 dacă aveți dubii."
+    ro: "Mesajul se dă drept o instituție ca să vă sperie, dar instituțiile nu cer bani sau date prin mesaj."
+    en: "The message poses as an institution to scare you, but institutions do not ask for money or data by message."
+    action: "Nu răspundeți și sunați instituția la {official_contact}."
   RF_THREAT:
-    ro: "Atenție! Mesajul vă amenință cu amenzi sau dosar. Autoritățile nu lucrează așa prin SMS. Nu apăsați niciun link."
-    en: "Warning! The message threatens you with fines or a case. Authorities do not work this way by SMS. Do not tap any link."
-    action: "Sunați ANAF la 031 403 91 60 dacă aveți dubii."
+    ro: "Mesajul vă amenință cu o pedeapsă ca să plătiți repede, dar instituțiile nu lucrează așa."
+    en: "The message threatens you with a penalty so you pay fast, but institutions do not work this way."
+    action: "Nu plătiți nimic și sunați instituția la {official_contact}."
   RF_PAYMENT_REQUEST:
-    ro: "Atenție! Vi se cere să plătiți repede o amendă. Autoritățile nu cer plată printr-un link. Nu trimiteți bani."
-    en: "Warning! You are asked to quickly pay a fine. Authorities do not ask for payment through a link. Do not send money."
-    action: "Sunați ANAF la 031 403 91 60 dacă aveți dubii."
+    ro: "Vi se cere să plătiți repede o sumă, dar instituțiile nu cer plata prin mesaj."
+    en: "You are asked to pay a sum quickly, but institutions do not ask for payment by message."
+    action: "Nu trimiteți bani și sunați instituția la {official_contact}."
+  RF_SUSPICIOUS_CONTACT:
+    ro: "Mesajul se dă drept o instituție, dar adresa de internet este falsă."
+    en: "The message poses as an institution, but the web address is fake."
+    action: "Nu apăsați pe ea; sunați instituția la {official_contact}."
 
 FAMILY_EMERGENCY:
+  action_fallback: "Nu trimiteți bani și sunați ruda la numărul pe care îl aveți deja salvat."
   _default:
-    ro: "Atenție! Cineva se dă drept o rudă și cere bani urgent. Este un truc des întâlnit. Nu trimiteți nimic."
-    en: "Warning! Someone is posing as a relative and urgently asking for money. This is a common trick. Do not send anything."
-    action: "Sunați ruda la numărul pe care îl aveți deja salvat."
+    ro: "Mesajul pare scris de o rudă, dar cere bani repede, iar așa lucrează escrocii."
+    en: "The message seems to come from a relative, but it asks for money fast, which is how scammers work."
+    action: "Nu trimiteți bani și sunați ruda la numărul pe care îl aveți deja salvat."
   RF_NEW_NUMBER:
-    ro: "Atenție! Mesajul spune că ruda are un număr nou și cere bani. Așa procedează escrocii. Nu trimiteți bani."
-    en: "Warning! The message says your relative has a new number and asks for money. This is how scammers act. Do not send money."
-    action: "Sunați ruda la numărul pe care îl aveți deja salvat."
+    ro: "Mesajul spune că ruda are un număr nou și cere bani, dar așa se dau escrocii drept rude."
+    en: "The message says your relative has a new number and asks for money, which is how scammers pose as relatives."
+    action: "Nu trimiteți bani și sunați ruda la numărul pe care îl aveți deja salvat."
   RF_PAYMENT_REQUEST:
-    ro: "Atenție! Vi se cere să trimiteți bani urgent pentru o rudă. Verificați întâi cine vă scrie. Nu trimiteți nimic deocamdată."
-    en: "Warning! You are asked to send money urgently for a relative. Check first who is writing. Do not send anything yet."
-    action: "Sunați ruda la numărul pe care îl aveți deja salvat."
+    ro: "Vi se cere să trimiteți bani repede pentru o rudă, dar nu știți sigur cine scrie."
+    en: "You are asked to send money fast for a relative, but you cannot be sure who is writing."
+    action: "Nu trimiteți nimic înainte să sunați ruda la numărul pe care îl aveți deja salvat."
   RF_SECRECY:
-    ro: "Atenție! Mesajul vă cere să păstrați secretul. Escrocii fac asta ca să nu cereți ajutor. Nu trimiteți bani."
-    en: "Warning! The message asks you to keep it secret. Scammers do this so you will not ask for help. Do not send money."
-    action: "Sunați ruda la numărul pe care îl aveți deja salvat."
+    ro: "Mesajul vă cere să păstrați secretul, iar escrocii fac asta ca să nu cereți ajutor."
+    en: "The message asks you to keep it secret, and scammers do this so you will not ask for help."
+    action: "Nu trimiteți bani și sunați ruda la numărul pe care îl aveți deja salvat."
 
 TECH_SUPPORT:
+  action_fallback: "Închideți apelul și nu dați acces nimănui; dacă ați instalat deja ceva, sunați la numărul de pe spatele cardului."
   _default:
-    ro: "Atenție! Cineva se oferă să vă repare calculatorul și cere acces. Așa iau escrocii controlul. Nu acceptați."
-    en: "Warning! Someone offers to fix your computer and asks for access. This is how scammers take control. Do not accept."
-    action: "Sunați Banca Dunărea la 0800 100 200 dacă vă cer date bancare."
+    ro: "Cineva se oferă să vă repare calculatorul și vă cere să-l lăsați să intre în el, iar așa îl poate controla."
+    en: "Someone offers to fix your computer and asks to get into it, and this lets them take control."
+    action: "Închideți apelul și nu dați acces nimănui; dacă ați instalat deja ceva, sunați la numărul de pe spatele cardului."
   RF_REMOTE_ACCESS:
-    ro: "Atenție! Vi se cere să instalați un program de acces la distanță. Așa vă pot goli contul. Nu instalați nimic."
-    en: "Warning! You are asked to install remote access software. This lets them empty your account. Do not install anything."
-    action: "Sunați Banca Dunărea la 0800 100 200 dacă ați dat deja acces."
+    ro: "Vi se cere să instalați un program care dă altcuiva controlul calculatorului, iar așa vă pot goli contul."
+    en: "You are asked to install a program that gives someone else control of your computer, and this lets them empty your account."
+    action: "Închideți apelul și nu dați acces nimănui; dacă ați instalat deja ceva, sunați la numărul de pe spatele cardului."
+  RF_THREAT:
+    ro: "Mesajul spune că aveți un virus ca să vă sperie, dar firmele adevărate nu sună așa."
+    en: "The message says you have a virus to scare you, but real companies do not call like this."
+    action: "Închideți apelul și nu dați acces nimănui; dacă ați instalat deja ceva, sunați la numărul de pe spatele cardului."
 
 MARKETPLACE:
+  action_fallback: "Nu apăsați pe ea și nu trimiteți marfa până nu vedeți banii în contul dumneavoastră."
   _default:
-    ro: "Atenție! Acest anunț pare o înșelătorie. Vi se cere plata în afara platformei. Nu plătiți prin linkul primit."
-    en: "Warning! This listing looks like a scam. You are asked to pay outside the platform. Do not pay through the link you got."
-    action: "Verificați comanda intrând pe piatamea.ro, pagina oficială."
+    ro: "Cumpărătorul vă trimite o adresă de internet ca să primiți banii, dar pentru a primi bani nu aveți nevoie niciodată de datele cardului."
+    en: "The buyer sends you a web address to receive the money, but receiving money never needs your card details."
+    action: "Nu apăsați pe ea și nu trimiteți marfa până nu vedeți banii în contul dumneavoastră."
+  RF_SUSPICIOUS_CONTACT:
+    ro: "Pentru a primi bani nu aveți nevoie niciodată de datele cardului, iar adresa de internet primită este falsă."
+    en: "Receiving money never needs your card details, and the web address you got is fake."
+    action: "Nu apăsați pe ea și nu trimiteți marfa până nu vedeți banii în contul dumneavoastră."
+  RF_DATA_REQUEST:
+    ro: "Cumpărătorul vă cere datele cardului ca să vă plătească, dar pentru a primi bani nu e nevoie de ele."
+    en: "The buyer asks for your card details to pay you, but receiving money does not need them."
+    action: "Nu dați datele cardului și nu trimiteți marfa până nu vedeți banii în contul dumneavoastră."
   RF_PAYMENT_REQUEST:
-    ro: "Atenție! Vânzătorul cere plata printr-un link, nu prin platformă. Așa dispar banii. Nu plătiți acolo."
-    en: "Warning! The seller asks for payment via a link, not the platform. This is how money disappears. Do not pay there."
-    action: "Verificați comanda intrând pe piatamea.ro, pagina oficială."
+    ro: "Vi se cere să plătiți în afara site-ului, iar așa puteți rămâne și fără bani, și fără marfă."
+    en: "You are asked to pay outside the site, and this can leave you without money and without the goods."
+    action: "Nu plătiți și folosiți doar plata din aplicația site-ului."
 
 ACCOUNT_TAKEOVER:
+  action_fallback: "Nu spuneți codul nimănui și sunați la numărul de pe spatele cardului."
   _default:
-    ro: "Atenție! Cineva încearcă să intre în contul dumneavoastră. Vi se cere codul de confirmare. Nu îl dați nimănui."
-    en: "Warning! Someone is trying to get into your account. They ask for your confirmation code. Do not give it to anyone."
-    action: "Sunați Banca Dunărea la 0800 100 200 dacă este vorba de contul bancar."
+    ro: "Cineva încearcă să intre în contul dumneavoastră și vă cere codul de confirmare."
+    en: "Someone is trying to get into your account and asks for your confirmation code."
+    action: "Nu spuneți codul nimănui și, dacă este contul bancar, sunați banca la {official_contact}."
   RF_CODE_REQUEST:
-    ro: "Atenție! Vi se cere codul primit prin SMS. Acel cod deschide contul dumneavoastră. Nu îl spuneți nimănui."
-    en: "Warning! You are asked for the code you got by SMS. That code opens your account. Do not tell it to anyone."
-    action: "Sunați Banca Dunărea la 0800 100 200 dacă este vorba de contul bancar."
+    ro: "Vi se cere codul primit prin mesaj, iar cu el cineva poate intra în contul dumneavoastră."
+    en: "You are asked for the code you got by message, and with it someone can get into your account."
+    action: "Nu spuneți codul nimănui și sunați banca la {official_contact}."
 
 INVESTMENT:
+  action_fallback: "Nu trimiteți bani și cereți părerea unei persoane de încredere înainte de orice transfer."
   _default:
-    ro: "Atenție! Acest mesaj promite câștiguri sigure. Nicio investiție reală nu garantează profit. Nu trimiteți bani."
-    en: "Warning! This message promises guaranteed gains. No real investment guarantees profit. Do not send money."
-    action: "Sunați Banca Dunărea la 0800 100 200 înainte de orice transfer."
+    ro: "Mesajul promite câștiguri sigure, dar nicio investiție adevărată nu garantează profit."
+    en: "The message promises sure gains, but no real investment guarantees a profit."
+    action: "Nu trimiteți bani și sunați banca la numărul de pe spatele cardului înainte de orice transfer."
   RF_TOO_GOOD:
-    ro: "Atenție! Vi se promit câștiguri prea mari ca să fie adevărate. Așa atrag escrocii banii. Nu investiți nimic."
-    en: "Warning! You are promised gains too big to be true. This is how scammers lure money. Do not invest anything."
-    action: "Sunați Banca Dunărea la 0800 100 200 înainte de orice transfer."
+    ro: "Vi se promit câștiguri prea mari ca să fie adevărate, iar așa atrag escrocii banii."
+    en: "You are promised gains too big to be true, and this is how scammers draw in money."
+    action: "Nu investiți nimic și sunați banca la numărul de pe spatele cardului înainte de orice transfer."
   RF_PAYMENT_REQUEST:
-    ro: "Atenție! Vi se cere să depuneți bani într-o investiție. Nu veți mai putea recupera suma. Nu trimiteți nimic."
-    en: "Warning! You are asked to deposit money into an investment. You will not get it back. Do not send anything."
-    action: "Sunați Banca Dunărea la 0800 100 200 înainte de orice transfer."
+    ro: "Vi se cere să depuneți bani într-o investiție, iar acești bani nu se mai pot recupera."
+    en: "You are asked to deposit money into an investment, and this money cannot be recovered."
+    action: "Nu trimiteți nimic și sunați banca la numărul de pe spatele cardului înainte de orice transfer."
 
 ROMANCE:
+  action_fallback: "Nu trimiteți nimic și vorbiți mai întâi cu o persoană apropiată."
   _default:
-    ro: "Atenție! Persoana câștigă încrederea dumneavoastră și apoi cere bani. Este o înșelătorie cunoscută. Nu trimiteți nimic."
-    en: "Warning! This person wins your trust and then asks for money. This is a known scam. Do not send anything."
-    action: "Vorbiți cu o persoană apropiată înainte de a trimite bani."
+    ro: "Persoana vă câștigă încrederea și apoi cere bani, iar asta este o înșelătorie cunoscută."
+    en: "This person wins your trust and then asks for money, which is a known scam."
+    action: "Nu trimiteți nimic și vorbiți mai întâi cu o persoană apropiată."
   RF_EMOTIONAL_PRESSURE:
-    ro: "Atenție! Mesajul folosește sentimentele ca să ceară bani. Așa procedează escrocii. Nu trimiteți nimic."
-    en: "Warning! The message uses feelings to ask for money. This is how scammers act. Do not send anything."
-    action: "Vorbiți cu o persoană apropiată înainte de a trimite bani."
+    ro: "Mesajul folosește sentimentele ca să vă ceară bani, iar așa lucrează escrocii."
+    en: "The message uses feelings to ask you for money, and this is how scammers work."
+    action: "Nu trimiteți nimic și vorbiți mai întâi cu o persoană apropiată."
   RF_PAYMENT_REQUEST:
-    ro: "Atenție! Cineva cu care ați vorbit online vă cere bani. Nu l-ați întâlnit niciodată. Nu trimiteți nimic."
-    en: "Warning! Someone you met online is asking you for money. You have never met in person. Do not send anything."
-    action: "Vorbiți cu o persoană apropiată înainte de a trimite bani."
+    ro: "O persoană cunoscută doar online vă cere bani, dar nu v-ați întâlnit niciodată."
+    en: "A person you know only online asks you for money, but you have never met."
+    action: "Nu trimiteți nimic și vorbiți mai întâi cu o persoană apropiată."
 
 JOB_OFFER:
+  action_fallback: "Nu plătiți și nu trimiteți date, ci căutați singur site-ul oficial al firmei."
   _default:
-    ro: "Atenție! Acest loc de muncă pare o înșelătorie. Vi se cere o taxă sau date personale. Nu plătiți și nu trimiteți date."
-    en: "Warning! This job looks like a scam. It asks for a fee or personal data. Do not pay and do not send data."
-    action: "Verificați oferta pe pagina oficială a firmei înainte de orice."
+    ro: "Oferta cere o taxă sau date personale, dar un loc de muncă adevărat nu cere așa ceva."
+    en: "The offer asks for a fee or personal data, but a real job does not ask for this."
+    action: "Nu plătiți și nu trimiteți date, ci verificați firma pe site-ul ei oficial."
   RF_TOO_GOOD:
-    ro: "Atenție! Vi se promit bani mulți pentru muncă ușoară. Ofertele reale nu arată așa. Nu plătiți nicio taxă."
-    en: "Warning! You are promised a lot of money for easy work. Real offers do not look like this. Do not pay any fee."
-    action: "Verificați oferta pe pagina oficială a firmei înainte de orice."
+    ro: "Vi se promit bani mulți pentru muncă ușoară, dar ofertele adevărate nu arată așa."
+    en: "You are promised a lot of money for easy work, but real offers do not look like this."
+    action: "Nu plătiți nicio taxă și verificați firma pe site-ul ei oficial."
   RF_DATA_REQUEST:
-    ro: "Atenție! Vi se cer CNP și date de cont pentru un loc de muncă. Un angajator real nu cere așa ceva acum. Nu le trimiteți."
-    en: "Warning! You are asked for ID and bank details for a job. A real employer does not ask for these now. Do not send them."
-    action: "Verificați oferta pe pagina oficială a firmei înainte de orice."
+    ro: "Vi se cer date personale pentru un loc de muncă, dar un angajator adevărat nu le cere prin mesaj."
+    en: "You are asked for personal data for a job, but a real employer does not ask for it by message."
+    action: "Nu trimiteți datele și verificați firma pe site-ul ei oficial."
+  RF_PAYMENT_REQUEST:
+    ro: "Vi se cere o taxă pentru un loc de muncă, dar un angajator adevărat nu cere bani de la dumneavoastră."
+    en: "You are asked for a fee for a job, but a real employer does not ask you for money."
+    action: "Nu plătiți nimic și verificați firma pe site-ul ei oficial."
 
 PRIZE_LOTTERY:
+  action_fallback: "Nu răspundeți și căutați singur numărul magazinului pe site-ul lui oficial."
   _default:
-    ro: "Atenție! Mesajul spune că ați câștigat un premiu. Un premiu pe care nu l-ați cerut este un semn de alarmă. Nu răspundeți."
-    en: "Warning! The message says you won a prize. A prize you never asked for is a warning sign. Do not reply."
-    action: "Sunați MegaShop la 0800 500 600 dacă vreți să verificați."
+    ro: "Mesajul spune că ați câștigat un premiu pe care nu l-ați cerut, iar asta este semn de țeapă."
+    en: "The message says you won a prize you never asked for, and this is a sign of a scam."
+    action: "Nu răspundeți și, dacă aveți dubii, sunați magazinul la {official_contact}."
   RF_TOO_GOOD:
-    ro: "Atenție! Vi se oferă un premiu mare pe neașteptate. Așa atrag escrocii atenția. Nu apăsați niciun link."
-    en: "Warning! You are suddenly offered a big prize. This is how scammers grab attention. Do not tap any link."
-    action: "Sunați MegaShop la 0800 500 600 dacă vreți să verificați."
+    ro: "Vi se oferă un premiu mare pe neașteptate, iar așa atrag escrocii atenția."
+    en: "You are suddenly offered a big prize, and this is how scammers get your attention."
+    action: "Nu apăsați nimic și, dacă aveți dubii, sunați magazinul la {official_contact}."
   RF_PAYMENT_REQUEST:
-    ro: "Atenție! Vi se cere o taxă ca să primiți premiul. Un premiu adevărat nu costă nimic. Nu plătiți."
-    en: "Warning! You are asked for a fee to receive the prize. A real prize costs nothing. Do not pay."
-    action: "Sunați MegaShop la 0800 500 600 dacă vreți să verificați."
+    ro: "Vi se cere o taxă ca să primiți premiul, dar un premiu adevărat nu costă nimic."
+    en: "You are asked for a fee to get the prize, but a real prize costs nothing."
+    action: "Nu plătiți și, dacă aveți dubii, sunați magazinul la {official_contact}."
   RF_DATA_REQUEST:
-    ro: "Atenție! Vi se cer datele contului ca să primiți premiul. Așa fură escrocii banii. Nu trimiteți date."
-    en: "Warning! You are asked for account details to get the prize. This is how scammers steal money. Do not send data."
-    action: "Sunați MegaShop la 0800 500 600 dacă vreți să verificați."
+    ro: "Vi se cer datele contului pentru un premiu, iar așa vi se pot lua banii."
+    en: "You are asked for your account details for a prize, and this is how your money can be taken."
+    action: "Nu trimiteți date și, dacă aveți dubii, sunați magazinul la {official_contact}."
 
 OTHER:
+  action_fallback: "Nu răspundeți și căutați singur numărul firmei pe site-ul ei oficial."
   _default:
-    ro: "Atenție! Acest mesaj are semne de înșelătorie. Vă grăbește și cere bani sau date. Nu apăsați niciun link."
-    en: "Warning! This message has signs of a scam. It rushes you and asks for money or data. Do not tap any link."
-    action: "Sunați furnizorul pe numărul oficial de pe factura dumneavoastră."
+    ro: "Mesajul vă grăbește și cere bani sau date, iar așa lucrează escrocii."
+    en: "The message rushes you and asks for money or data, which is how scammers work."
+    action: "Nu răspundeți și căutați singur numărul firmei pe site-ul ei oficial."
   RF_THREAT:
-    ro: "Atenție! Mesajul vă amenință ca să plătiți repede. Furnizorii reali nu lucrează așa. Nu apăsați niciun link."
-    en: "Warning! The message threatens you to pay fast. Real providers do not work this way. Do not tap any link."
-    action: "Sunați furnizorul pe numărul oficial de pe factura dumneavoastră."
+    ro: "Mesajul vă amenință ca să plătiți repede, dar firmele adevărate nu lucrează așa."
+    en: "The message threatens you so you pay fast, but real companies do not work this way."
+    action: "Nu plătiți nimic și căutați singur numărul firmei pe site-ul ei oficial."
   RF_DATA_REQUEST:
-    ro: "Atenție! Vi se cer date personale pentru o verificare. Este un truc ca să vă fure contul. Nu trimiteți date."
-    en: "Warning! You are asked for personal data for a check. This is a trick to steal your account. Do not send data."
-    action: "Sunați furnizorul pe numărul oficial de pe factura dumneavoastră."
+    ro: "Vi se cer date personale pentru o verificare, iar așa vă poate fura cineva contul."
+    en: "You are asked for personal data for a check, and this is how someone can steal your account."
+    action: "Nu trimiteți date și căutați singur numărul firmei pe site-ul ei oficial."
 
 NONE:
+  action_fallback: "Nu este nevoie de nicio acțiune."
   _default:
-    ro: "Mesajul pare în regulă. Nu am găsit semne de înșelătorie. Totuși, nu dați coduri sau date nimănui."
-    en: "The message looks fine. We found no signs of a scam. Still, do not give codes or data to anyone."
+    ro: "Mesajul pare în regulă, dar nu dați niciodată coduri sau date nimănui."
+    en: "The message looks fine, but never give codes or data to anyone."
     action: "Nu este nevoie de nicio acțiune."

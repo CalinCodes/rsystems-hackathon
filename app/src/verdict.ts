@@ -7,12 +7,16 @@ export interface VerdictLook {
   cls: string;
 }
 
-// Romanian-first labels; icons double the colour so the verdict reads without
-// relying on colour alone (accessibility for elderly / colour-blind users).
+// Texts are the brief's exact wording. Icons double the colour so the verdict
+// reads without relying on colour alone (accessibility for elderly / colour-blind users).
 export const VERDICT_LOOK: Record<Verdict, VerdictLook> = {
-  SAFE: { icon: '✓', word: 'Sigur', cls: 'text-safe border-safe' },
-  SUSPICIOUS: { icon: '⚠', word: 'Suspect', cls: 'text-suspicious border-suspicious' },
-  SCAM: { icon: '⛔', word: 'Înșelătorie', cls: 'text-scam border-scam' },
+  SAFE: { icon: '✓', word: 'Pare în regulă', cls: 'text-safe border-safe' },
+  SUSPICIOUS: {
+    icon: '⚠',
+    word: 'Atenție, verificați înainte să răspundeți',
+    cls: 'text-suspicious border-suspicious',
+  },
+  SCAM: { icon: '⛔', word: 'Pare o țeapă! Nu răspundeți', cls: 'text-scam border-scam' },
 };
 
 /** Romanian display name for each scam type, for the plain-language summary line. */
