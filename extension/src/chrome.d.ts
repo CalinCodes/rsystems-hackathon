@@ -21,4 +21,13 @@ declare namespace chrome {
       options: { type: 'basic'; iconUrl: string; title: string; message: string; priority?: number },
     ): Promise<string>;
   }
+  namespace storage {
+    const local: {
+      get(key: string): Promise<Record<string, unknown>>;
+      set(items: Record<string, unknown>): Promise<void>;
+    };
+  }
+  namespace permissions {
+    function request(p: { origins: string[] }): Promise<boolean>;
+  }
 }
