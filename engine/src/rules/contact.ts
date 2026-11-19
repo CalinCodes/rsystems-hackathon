@@ -54,9 +54,28 @@ const isOfficialHost = (host: string, site: string): boolean => host === site ||
 
 const claimedIn = (text: string): Org[] => ORGS.filter((o) => o.nameRe.test(text));
 
+const HOSTISH = /^[\p{L}\p{N}\p{M}\p{Cf}_@+%-]+(?:[.。．｡][\p{L}\p{N}\p{M}\p{Cf}_@+%-]+)+$/u;
+const INVISIBLE = /[\p{Cf}\p{M}]/u;
+
+/**
+ * canonicalize() strips invisible and combining characters so rules can read the text, but that also erases the
+ * evidence of tampering: "b̀ancadunarea.ro" would come out as the official host. So the decision is made on
+ * the ORIGINAL text: a host-like token that still holds such characters after NFKC is suspicious in itself.
+ * (NFKC first, so a decomposed Romanian "ă" = a + breve is recomposed and does not trigger this.)
+ */
+function obfuscatedHostToken(orig: string): string | null {
+  for (const tok of orig.split(/\s+/)) {
+    const t = tok.normalize('NFKC').replace(/^\p{P}+|\p{P}+$/gu, '');
+    if (HOSTISH.test(t) && INVISIBLE.test(t)) return t;
+  }
+  return null;
+}
+
 function messageHits(m: MsgCtx, claimed: Org[]): Hit[] {
   const out: Hit[] = [];
   const flag = (what: string): void => void out.push({ flag: 'RF_SUSPICIOUS_CONTACT', msg: m.n, evidence: what.slice(0, 80), src: 'rule' });
+
+  if (obfuscatedHostToken(m.orig) !== null) flag('obfuscated host');
 
   for (const url of extractUrls(m.raw)) {
     const host = hostOf(url);

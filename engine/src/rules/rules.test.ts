@@ -172,7 +172,6 @@ describe('invisible-character and IDNA obfuscation', () => {
   });
   it('genuine Romanian text and the real site are unaffected', () => {
     expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro'])).toEqual([]);
-    expect(flags(['Banca Dunărea: intrați pe bancadunarea​.ro'])).toEqual([]);
     expect(flags(['Banca Dunărea: Codul de confirmare este 483920. Nu îl comunicați nimănui.'])).toEqual([]);
   });
 });
@@ -185,5 +184,25 @@ describe('IDN email addresses', () => {
   });
   it('still accepts the official address', () => {
     expect(flags(['Banca Dunărea: scrieți la suport@bancadunarea.ro'])).toEqual([]);
+  });
+});
+
+describe('tampering is judged on the original text', () => {
+  it('an invisible character inside an otherwise official host is suspicious, not official', () => {
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea​.ro'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.r‍o'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('a combining mark with no precomposed form cannot be stripped into an official host', () => {
+    expect(flags(['Banca Dunărea: intrați pe b̀ancadunarea.ro'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('works with no organisation named and for email addresses', () => {
+    expect(flags(['Vezi evil.​ro'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Scrieți la suport@bancadunarea.r‍o'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('decomposed Romanian letters are recomposed and do not trigger it', () => {
+    expect(flags(['Banca Dunărea: vedeți bancadunarea.ro'])).toEqual([]);
+  });
+  it('ordinary text with a trailing invisible character is not a host', () => {
+    expect(flags(['Ne vedem mâine​.'])).toEqual([]);
   });
 });

@@ -4,6 +4,9 @@ import { canonicalize, normalizeText } from '../normalize';
 export interface MsgCtx {
   n: number;
   from: 'sender' | 'reader';
+  /** The message exactly as received. Security checks that canonicalisation could blind must read this. */
+  orig: string;
+  /** Canonical text (see canonicalize): invisible characters removed. */
   raw: string;
   /** Lowercased, diacritics stripped. Same length as raw, so indexes map back for evidence. */
   norm: string;
@@ -21,7 +24,7 @@ export function buildCtx(s: Scenario): RuleCtx {
   // invisible characters were stripped out.
   const msgs = s.messages.map((m) => {
     const raw = canonicalize(m.text);
-    return { n: m.n, from: m.from, raw, norm: normalizeText(raw) };
+    return { n: m.n, from: m.from, orig: m.text, raw, norm: normalizeText(raw) };
   });
   return { scenario: s, msgs };
 }
