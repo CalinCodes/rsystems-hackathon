@@ -13,13 +13,24 @@ export interface RawMessage {
  */
 export const MAX_MESSAGES = 20;
 
+/**
+ * WhatsApp Web wraps phone numbers in invisible direction marks (U+202A…U+202C, U+2066…U+2069, LRM/RLM) and
+ * uses no-break spaces. Left in, "+40 721…" would not look like a number and an unknown sender would pass
+ * as a saved contact.
+ */
+export function cleanTitle(title: string): string {
+  return title.replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '').replace(/[\u00a0\u202f]/g, ' ').trim();
+}
+
 /** A chat title that is a phone number means the sender is not in the reader's contacts. */
 export function isPhoneTitle(title: string): boolean {
-  return /^[+\d\s().-]+$/.test(title) && title.replace(/\D/g, '').length >= 9;
+  const t = cleanTitle(title);
+  return /^[+\d\s().-]+$/.test(t) && t.replace(/\D/g, '').length >= 9;
 }
 
 /** The open chat as a Scenario: incoming bubbles are the sender, the reader's own bubbles are the reader. */
-export function toScenario(title: string, raw: RawMessage[]): Scenario {
+export function toScenario(rawTitle: string, raw: RawMessage[]): Scenario {
+  const title = cleanTitle(rawTitle);
   const recent = raw.filter((m) => m.text.trim() !== '').slice(-MAX_MESSAGES);
   const phone = isPhoneTitle(title);
   return {

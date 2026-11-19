@@ -11,6 +11,15 @@ describe('isPhoneTitle', () => {
     expect(isPhoneTitle('Mama')).toBe(false);
     expect(isPhoneTitle('112')).toBe(false);
   });
+  it('sees through the invisible direction marks and no-break spaces WhatsApp Web adds around numbers', () => {
+    expect(isPhoneTitle('\u202a+40\u00a0721\u00a0555\u00a0000\u202c')).toBe(true);
+    expect(isPhoneTitle('\u2066+40 721 555 000\u2069')).toBe(true);
+    expect(toScenario('\u202a+40 721 555 000\u202c', [inn('x')]).sender).toEqual({
+      name: null,
+      address: '+40 721 555 000',
+      known_contact: false,
+    });
+  });
 });
 
 describe('toScenario', () => {

@@ -38,7 +38,8 @@ The banner footer then says "cu reguli și model AI local".
 |---|---|
 | `src/content.ts` | Runs in the WhatsApp tab and watches the page for changes (debounced 0.8 s). When the open chat changes, it sends that chat to the service worker. |
 | `src/dom.ts` | Reads bubbles through `data-pre-plain-text` and `.message-out`. These stay stable when WhatsApp regenerates its class names. |
-| `src/thread.ts` | Builds a `Scenario` from the latest 20 messages. Incoming = sender, own = reader. A chat titled with a phone number = unknown sender. |
+| `src/thread.ts` | Builds a `Scenario` from the latest 20 messages. Incoming = sender, own = reader. A chat titled with a phone number = unknown sender. WhatsApp's invisible direction marks and no-break spaces are stripped first. |
+| `src/banner.ts` | What to show. Risky chat: the engine's warning, plus "Numărul nu este în agenda dumneavoastră" for unknown numbers. Safe chat from an unknown number: a calm grey note (no badge, no notification). Safe chat from a saved contact: nothing. |
 | `src/background.ts` | Service worker. Runs `analyze()` with `ml/out/weights.json`, then sets the badge and sends the notification. |
 | `src/embedCache.ts` | Embeds only new messages, keyed by a hash rather than the text. After a failed Ollama call it pauses the model for 60 s. |
 | `src/view.ts` | Draws the banner (inline styles, system font, 18 px+) and outlines the first-alert bubble. |

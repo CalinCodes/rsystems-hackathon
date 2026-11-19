@@ -21,7 +21,7 @@ async function check(): Promise<void> {
   const chatKey = threadKey(chat.title, []);
   const r = await chrome.runtime.sendMessage<Result | null>({ type: 'ss-analyze', chat: chatKey, scenario });
   if (r === null || thread !== lastThread) return; // a newer read superseded this one
-  const model = bannerModel(r);
+  const model = bannerModel(r, scenario);
   const key = `${chatKey}:${r.verdict}`;
   renderBanner(dismissed === key ? null : model, () => {
     dismissed = key;
@@ -29,7 +29,7 @@ async function check(): Promise<void> {
   // Scenario keeps only the latest MAX_MESSAGES bubbles, so message n maps to the tail of the bubble list.
   const offset = chat.bubbles.length - scenario.messages.length;
   const bubble: ElLike | undefined = r.firstAlert === null ? undefined : chat.bubbles[offset + r.firstAlert - 1];
-  markFirstAlert(model === null ? undefined : (bubble as unknown as HTMLElement | undefined));
+  markFirstAlert(model === null || model.tone === 'info' ? undefined : (bubble as unknown as HTMLElement | undefined));
 }
 
 new MutationObserver(() => {
