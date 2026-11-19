@@ -1,5 +1,5 @@
 import { checkConfig, sendPage, type PagerConfig, type PagerProblem } from './pager';
-import { loadPager, savePager } from './pagerStore';
+import { loadLast, loadPager, savePager } from './pagerStore';
 
 const PROBLEM_RO: Record<PagerProblem, string> = {
   server: 'Adresa serverului nu este corectă (de ex. http://192.168.1.20:8090).',
@@ -60,3 +60,12 @@ void loadPager().then((c) => {
 });
 $('save').addEventListener('click', () => void onSave());
 $('test').addEventListener('click', () => void onTest());
+
+const time = (ms: number): string => new Date(ms).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+void loadLast().then((l) => {
+  if (!l) return;
+  $('last').textContent =
+    l.outcome === 'sent'
+      ? `Ultima alertă: trimisă la ${time(l.at)}.`
+      : `Ultima alertă: NU a putut fi trimisă la ${time(l.at)} (${l.attempts} încercări, ${l.error ?? 'eroare'}). Verificați internetul.`;
+});

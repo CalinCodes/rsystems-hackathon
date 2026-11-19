@@ -22,10 +22,12 @@ declare namespace chrome {
     ): Promise<string>;
   }
   namespace storage {
-    const local: {
+    interface Area {
       get(key: string): Promise<Record<string, unknown>>;
       set(items: Record<string, unknown>): Promise<void>;
-    };
+    }
+    const local: Area;
+    const session: Area;
   }
   namespace permissions {
     function request(p: { origins: string[] }): Promise<boolean>;
