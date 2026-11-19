@@ -3,12 +3,43 @@
   "name": "Scam Shield",
   "version": "0.1.0",
   "description": "Citește conversația deschisă în WhatsApp Web și vă avertizează, pe loc, când pare o țeapă. Totul rămâne pe calculatorul dumneavoastră.",
-  "permissions": ["notifications"],
-  "host_permissions": ["https://web.whatsapp.com/*", "http://localhost:11434/*"],
-  "background": { "service_worker": "background.js" },
-  "content_scripts": [
-    { "matches": ["https://web.whatsapp.com/*"], "js": ["content.js"], "run_at": "document_idle" }
+  "permissions": [
+    "notifications",
+    "storage"
   ],
-  "action": { "default_title": "Scam Shield", "default_icon": { "128": "icon128.png" } },
-  "icons": { "128": "icon128.png" }
+  "host_permissions": [
+    "https://web.whatsapp.com/*",
+    "http://localhost:11434/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://web.whatsapp.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Scam Shield",
+    "default_icon": {
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "128": "icon128.png"
+  },
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
 }

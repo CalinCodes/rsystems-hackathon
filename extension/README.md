@@ -32,6 +32,30 @@ sudo systemctl restart ollama
 
 The banner footer then says "cu reguli și model AI local".
 
+## Alert a trusted family member (ntfy, optional)
+
+When a chat turns **SCAM**, the extension sends one alert per chat to a relative's phone through
+[ntfy](https://ntfy.sh), on the home network only. The alert holds the reader's name, the time and the scam type
+in plain words. **No message text, no sender number and no chat name ever leave the laptop.** SUSPICIOUS does not
+page anyone. Only private-network servers are accepted (192.168.x.x, 10.x.x.x, 172.16–31.x.x, localhost, `.local`),
+so `ntfy.sh` or any public server is refused.
+
+1. On the laptop, run an ntfy server on the local network:
+   ```bash
+   brew install ntfy
+   ntfy serve --listen-http :8090
+   ipconfig getifaddr en0          # the laptop's address, e.g. 192.168.1.20
+   ```
+2. On the relative's phone (same Wi-Fi, or the laptop on the phone's hotspot): install the ntfy app, tap **+**,
+   turn on **Use another server**, enter `http://192.168.1.20:8090` and a hard-to-guess topic, e.g.
+   `scamshield-familia-pop-7k2`.
+3. In Chrome: `chrome://extensions` → Scam Shield → **Details** → **Extension options**. Fill in the name
+   ("Mama"), the server and the topic, tick **Trimite alerte**, and click **Salvează** (Chrome asks permission for
+   that one server). **Trimite un test** sends a test alert.
+
+If the server or the phone is unreachable, the reader still gets the normal warning; the alert is retried once on the
+next message of that chat.
+
 ## How it works
 
 | File | Job |
@@ -42,13 +66,16 @@ The banner footer then says "cu reguli și model AI local".
 | `src/banner.ts` | What to show. Risky chat: the engine's warning, plus "Numărul nu este în agenda dumneavoastră" for unknown numbers. Safe chat from an unknown number: a calm grey note (no badge, no notification). Safe chat from a saved contact: nothing. |
 | `src/background.ts` | Service worker. Runs `analyze()` with `ml/out/weights.json`, then sets the badge and sends the notification. |
 | `src/embedCache.ts` | Embeds only new messages, keyed by a hash rather than the text. After a failed Ollama call it pauses the model for 60 s. |
+| `src/pager.ts`, `src/pagerStore.ts`, `src/options.ts` | Family alert: payload (no message text), local-network check, once per chat on SCAM, options page. |
 | `src/view.ts` | Draws the banner (inline styles, system font, 18 px+) and outlines the first-alert bubble. |
 
 ## Privacy
 
 - It reads only the chat on screen. Nothing is stored, and message text is never logged.
-- The only network call is to `http://localhost:11434` (Ollama on this laptop).
-- Permissions are limited to `notifications`, `web.whatsapp.com` and `localhost:11434`.
+- The only network calls are to `http://localhost:11434` (Ollama on this laptop) and, only if you turn the family
+  alert on, to the ntfy server you entered (local network only, no message text).
+- Permissions are limited to `notifications`, `storage`, `web.whatsapp.com` and `localhost:11434`. The ntfy server
+  is an optional permission, asked for that one address when you save the options.
 
 ## Limits
 

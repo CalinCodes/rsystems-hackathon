@@ -8,7 +8,7 @@ const out = here('./dist/');
 mkdirSync(out, { recursive: true });
 
 await build({
-  entryPoints: { background: here('./src/background.ts'), content: here('./src/content.ts') },
+  entryPoints: { background: here('./src/background.ts'), content: here('./src/content.ts'), options: here('./src/options.ts') },
   outdir: out,
   bundle: true,
   // IIFE for both: content scripts cannot be modules, and a classic service worker needs no "type" key.
@@ -17,5 +17,5 @@ await build({
   legalComments: 'none',
   logLevel: 'warning',
 });
-for (const f of ['manifest.json', 'icon128.png']) copyFileSync(here(`./${f}`), `${out}${f}`);
+for (const f of ['manifest.json', 'icon128.png', 'options.html']) copyFileSync(here(`./${f}`), `${out}${f}`);
 console.log('built extension/dist (load it unpacked in chrome://extensions)');
