@@ -27,6 +27,7 @@ export const ORGS: Org[] = catalog.organisations.map((o) => ({
 const SHORTENERS = /^(?:bit\.ly|tinyurl\.com|cutt\.ly|t\.ly|rb\.gy|is\.gd|goo\.gl|ow\.ly)$/;
 const RISKY_TLD = /\.(?:xyz|top|click|link|site|online|example)$/;
 const MOBILE = /^(?:\+40|0040|0)7\d{8}$/;
+const LINK_ACTION = /\b(?:accesa\w*|intra\w*|apasa\w*|click|completa\w*|introdu\w*|confirma\w*|confirmi|plat\w*|achit\w*|logheaz\w*|logati\w*|autentific\w*|descarc\w*|instal\w*|link\w*|formular\w*)\b/;
 
 /**
  * Host as the victim's browser would resolve it (WHATWG parser), not string slicing:
@@ -98,6 +99,9 @@ function messageHits(m: MsgCtx, claimed: Org[]): Hit[] {
     else if (SHORTENERS.test(host)) flag(url);
     else if (claimed.length > 0 && !official) flag(url);
     else if (claimed.length === 0 && RISKY_TLD.test(host)) flag(url);
+    // Brief: any link not on the official list. A friend sharing an article is not asked to act on it, so an
+    // unofficial link counts when the message asks the reader to use it (install, pay, log in, fill in...).
+    else if (!official && LINK_ACTION.test(m.norm)) flag(url);
   }
   for (const email of extractEmails(m.raw)) {
     // The domain is whatever follows the LAST "@" (that is where mail is delivered); a second "@" is itself a red flag.

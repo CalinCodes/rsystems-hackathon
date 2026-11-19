@@ -4,8 +4,8 @@ import { hostOf, isOfficialHost, ORGS, type Org } from './contact';
 import { senderIsOrg } from './sender';
 import { GAP, NOT, firstHit, isDenied, makeHit, perSenderMessage, type MsgCtx, type Rule } from './util';
 
-const NOUN = String.raw`(?:cvv2?|cvc2?|cnp|pin|numar(?:ul)?\s+(?:de\s+)?(?:card(?:ului)?|cont(?:ului)?)|date(?:le)?\s+(?:de\s+)?(?:card(?:ului)?|bancare|personale|de\s+autentificare|de\s+acces|de\s+identificare|de\s+logare|contului)|data\s+expirarii|serie(?:a)?(?:\s+si\s+numar(?:ul)?)?\s+(?:de\s+)?(?:buletin|ci)|parola|datele\s+(?:dvs|tale|dumneavoastra)|credentiale\w*)`;
-const VERB = String.raw`(?:trimit\w*|spun\w*|comunic\w*|dati|furniz\w*|transmit\w*|introdu\w*|completa(?:ti)?|actualiza(?:ti)?|confirma(?:ti)?|verifica(?:ti)?|dezvalui\w*|scrie(?:ti)?)`;
+const NOUN = String.raw`(?:cvv2?|cvc2?|cnp|pin|numar(?:ul)?\s+(?:de\s+)?(?:card(?:ului)?|cont(?:ului)?)|date(?:le)?\s+(?:de\s+)?(?:card(?:ului)?|bancare|personale|de\s+autentificare|de\s+acces|de\s+identificare|de\s+logare|contului)|data\s+expirarii|serie(?:a)?(?:\s+si\s+numar(?:ul)?)?\s+(?:de\s+)?(?:buletin|ci)|parola|datele\s+(?:dvs|tale|dumneavoastra)|credentiale\w*|(?:o\s+)?(?:copi\w*|poz\w*|fotografi\w*|scan\w*)\s+(?:dupa\s+|a\s+|cu\s+|de\s+pe\s+)?(?:buletin\w*|ci|carte\w* de identitate|pasaport\w*))`;
+const VERB = String.raw`(?:trimit\w*|spun\w*|comunic\w*|dati|dai|da-mi|da-ne|zici|furniz\w*|transmit\w*|introdu\w*|completa(?:ti)?|actualiza(?:ti)?|confirma(?:ti)?|verifica(?:ti)?|dezvalui\w*|scrie(?:ti)?|reply|raspunde(?:ti)?|(?:am|avem) nevoie de|(?:imi|ne) trebuie)`;
 
 const RE = new RegExp(`${NOT}\\b${VERB}\\b${GAP}\\b${NOUN}\\b|\\b${NOUN}\\b${GAP}${NOT}\\b${VERB}\\b`, 'g');
 

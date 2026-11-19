@@ -9,7 +9,7 @@ import { NOT, clauseAt, isDenied, makeHit, perSenderMessage, type MsgCtx, type R
  * Instead we find the currency WORD (a fixed token) and walk backwards by hand over separators to a digit: linear,
  * and no padding ("100      lei", "100....lei") or prepended junk can dodge it.
  */
-const VERB = String.raw`(?:transfera|transferi|transferati|vira|virati|virezi|vireaza|trimite|trimiti|trimiteti|platiti|platesti|plateste|achita|achiti|achitati|depune|depui|depuneti|incarca|incarci|incarcati|imprumuta|imprumuti|retrage|retrageti|scoate|scoateti|da-mi|dati-mi)`;
+const VERB = String.raw`(?:transfera|transferi|transferati|vira|virati|virezi|vireaza|trimite|trimiti|trimiteti|platiti|platesti|plateste|achita|achiti|achitati|depune|depui|depuneti|incarca|incarci|incarcati|imprumuta|imprumuti|retrage|retrageti|scoate|scoateti|da-mi|dati-mi|muta|muti|mutati)`;
 const VERB_RE = new RegExp(`${NOT}\\b${VERB}\\b`, 'g');
 
 // Requests that are a payment ask by themselves: "poti sa-mi faci un transfer", "am nevoie de bani".
@@ -18,11 +18,17 @@ const STANDALONE_RE = new RegExp(
     String.raw`${NOT}\b(?:fa|faci|faceti|efectueaza|efectuati|efectuezi|realizeaza|realizati|realizezi)\s+(?:un\s+|o\s+)?(?:transfer|virament|plata)\w*`,
     String.raw`\b(?:am nevoie|imi trebuie|imi mai trebuie|trebuie|necesar\w*|cer|solicit|vreau)\s+(?:urgent\s+)?(?:de\s+)?(?:un\s+|o\s+)?(?:transfer|virament|plata|bani|banii|suma)\b`,
     String.raw`\bplata (?:taxei|sumei|comisionului|avansului)\b`,
+    // "imi trebuie 1.500 euro", "am nevoie de 900 lei": a need stated as an amount.
+    String.raw`\b(?:am nevoie|imi trebuie|ne trebuie|avem nevoie)\s+(?:de\s+)?\d`,
+    // "fee de procesare 200 lei platibil in 24h", "taxa e de achitat azi"
+    String.raw`\bplatibil\w*|\bde (?:achitat|platit)\b`,
+    // "se cere o garantie de 150 lei", "este necesar un avans"
+    String.raw`\b(?:se cere|cerem|cereti|percepem|e necesar\w*|este necesar\w*)\b[^.!?\n]{0,30}\b(?:garanti\w*|tax\w*|avans\w*|depozit\w*|depunere|fee|comision\w*)\b`,
   ].join('|'),
   'g',
 );
 
-const WORD_OBJECT = /\b(?:bani|banii|suma|sume|taxa|taxe|avans|comision|garantie|iban\w*|revolut|western union|moneygram|bitcoin|crypto|gift ?card|card cadou)\b/;
+const WORD_OBJECT = /\b(?:bani|banii|suma|sume|taxa|taxe|avans|avansul|comision|garantie|iban\w*|revolut|western union|moneygram|bitcoin|crypto|gift ?card|card cadou|economii\w*|depozit\w*|transfer|cont(?:ul)? (?:sigur|de protectie|de garantie))\b/;
 const CURRENCY = /(?<![a-z])(?:lei|ron|euro|eur|usd|dolari|dolar|lire|gbp|chf)(?![a-z])|[€$]/g;
 // "transfer de 500 lei" is a demand, but "transferul de 500 lei a fost efectuat" is a bank notice.
 const NOTICE = /\b(?:efectuat\w*|primit\w*|confirmat\w*|reusit\w*|autorizat\w*|finalizat\w*|procesat\w*|aprobat\w*|incasat\w*|realizat\w*)\b/;

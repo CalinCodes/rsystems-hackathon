@@ -3,7 +3,8 @@ import { GAP, NOT, firstHit, isDenied, makeHit, type MsgCtx, type Rule } from '.
 
 const NOUN = String.raw`(?:cod(?:ul|uri|urile)?|otp|token|parola unica)`;
 // "confirma" only as a verb: "codul de confirmare" is a noun phrase and must not match.
-const VERB = String.raw`(?:trimit\w*|spun\w*|comunic\w*|spui|dai|citesti|dati|da-mi|da-ne|furniz\w*|transmit\w*|citi(?:ti)?|redati|dicta(?:ti)?|confirma(?:ti)?)`;
+// No "introduceti": genuine 2FA texts say "introduceti codul in aplicatie".
+const VERB = String.raw`(?:trimit\w*|spun\w*|comunic\w*|spui|dai|citesti|dati|da-mi|da-ne|furniz\w*|transmit\w*|citi(?:ti)?|redati|dicta(?:ti)?|confirma(?:ti)?|confirmi|(?:am|avem) nevoie de)`;
 
 const RE = new RegExp(
   `${NOT}\\b${VERB}\\b${GAP}\\b${NOUN}\\b` +
