@@ -1,5 +1,7 @@
 import type { Result } from '@ss/contracts';
 import { guardHit, guardText, type GuardKind } from './guard';
+import { localVoice, speak, stopSpeaking } from './speech';
+import { button, layer, leave, node } from './ui';
 
 /** What the guard needs to know about the chat that is open right now. */
 export interface GuardState {
@@ -7,7 +9,6 @@ export interface GuardState {
   action: string;
 }
 
-const NOTE_ID = 'scam-shield-guard';
 // WHY these selectors: like dom.ts, avoid WhatsApp's generated class names. The composer is the only editable
 // box in the chat footer, and the send button is recognised by its icon name or its label.
 const COMPOSER = '#main footer [contenteditable="true"]';
@@ -28,37 +29,55 @@ function findSendButton(): HTMLElement | null {
   return sendButton(icon) ?? document.querySelector<HTMLElement>('#main footer button[aria-label^="Send"]');
 }
 
-function button(label: string, primary: boolean, onClick: () => void): HTMLButtonElement {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.textContent = label;
-  b.style.cssText = `margin:8px 8px 0 0;padding:10px 18px;border-radius:10px;font:600 18px system-ui,sans-serif;
-    cursor:pointer;border:2px solid #b3261e;${primary ? 'background:#b3261e;color:#fff;' : 'background:#fff;color:#5f1410;'}`;
-  b.addEventListener('click', onClick);
-  return b;
+function close(root: ShadowRoot): void {
+  stopSpeaking();
+  leave(root.querySelector('.guard'));
+  leave(root.querySelector('.backdrop'));
+  // Back to where the reader was typing, so the keyboard keeps working as before.
+  document.querySelector<HTMLElement>(COMPOSER)?.focus();
+}
+
+/** Tab and Shift+Tab stay inside the dialog; Escape is "Nu trimit". */
+function trapKeys(box: HTMLElement, root: ShadowRoot): void {
+  box.addEventListener('keydown', (e) => {
+    e.stopPropagation(); // keep WhatsApp's shortcuts away while the dialog is open
+    if (e.key === 'Escape') return close(root);
+    if (e.key !== 'Tab') return;
+    const items = [...box.querySelectorAll<HTMLElement>('button')];
+    const at = items.indexOf(root.activeElement as HTMLElement);
+    const next = (at + (e.shiftKey ? -1 : 1) + items.length) % items.length;
+    e.preventDefault();
+    items[next]?.focus();
+  });
 }
 
 /** The stop note above the composer. "Nu trimit" is the default and gets focus, so Enter keeps it safe. */
 function renderGuard(kind: GuardKind, action: string, onSendAnyway: () => void): void {
-  document.getElementById(NOTE_ID)?.remove();
-  const box = document.createElement('div');
-  box.id = NOTE_ID;
+  const root = layer();
+  if (root.querySelector('.guard:not(.leaving)')) return; // already asking
+  const backdrop = node('div', 'backdrop');
+  backdrop.addEventListener('click', () => close(root));
+  const box = node('section', 'card guard scam');
   box.setAttribute('role', 'alertdialog');
-  box.style.cssText = `position:fixed;bottom:96px;left:50%;transform:translateX(-50%);z-index:2147483647;
-    max-width:560px;width:calc(100% - 32px);box-sizing:border-box;padding:16px 20px;border-radius:12px;
-    background:#fdecea;color:#5f1410;border:3px solid #b3261e;box-shadow:0 6px 24px rgba(0,0,0,.25);
-    font:18px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;`;
-  const text = document.createElement('p');
-  text.style.cssText = 'margin:0;font-weight:600;';
-  text.textContent = `✋ ${guardText(kind, action)}`;
-  const close = (): void => box.remove();
-  const stay = button('Nu trimit', true, close);
-  const send = button('Trimit oricum', false, () => {
-    close();
+  box.setAttribute('aria-modal', 'true');
+  const message = guardText(kind, action);
+  const head = node('p', 'headline');
+  head.append(node('span', 'icon', '✋'), node('span', '', 'Stați puțin!'));
+  const text = node('p', 'body', message.replace(/^Stați puțin!\s*/, ''));
+  text.id = 'scam-shield-guard-text';
+  box.setAttribute('aria-labelledby', text.id);
+  const row = node('div', 'row');
+  const stay = button('Nu trimit', 'primary', () => close(root));
+  const send = button('Trimit oricum', '', () => {
+    close(root);
     onSendAnyway();
   });
-  box.append(text, stay, send);
-  document.body.append(box);
+  row.append(stay);
+  if (localVoice() !== null) row.append(button('🔊 Ascultați', '', () => void speak(message)));
+  row.append(send);
+  box.append(head, text, row);
+  trapKeys(box, root);
+  root.append(backdrop, box);
   stay.focus();
 }
 

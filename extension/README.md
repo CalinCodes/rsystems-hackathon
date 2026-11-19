@@ -78,7 +78,19 @@ logged or sent.
 | `src/embedCache.ts` | Embeds only new messages, keyed by a hash rather than the text. After a failed Ollama call it pauses the model for 60 s. |
 | `src/pager.ts`, `src/pagerStore.ts`, `src/options.ts` | Family alert: payload (no message text), local-network check, once per chat on SCAM, options page. |
 | `src/guard.ts`, `src/guardView.ts` | Typing guard: finds a code, card, CNP or remote-access id in the reader's draft (pure, tested) and stops the send in risky chats. |
-| `src/view.ts` | Draws the banner (inline styles, system font, 18 px+) and outlines the first-alert bubble. |
+| `src/view.ts` | Draws the banner: verdict in words + icon, "Ce să faceți" box, **Ascultați** / **Arată mesajul** / **Am înțeles**. Closing shrinks it to a pill that reopens it. Same content is never redrawn; SUSPICIOUS → SCAM pulses once. Outlines and pulses the first-alert bubble. |
+| `src/ui.ts` | Shared look in a shadow root (WhatsApp's CSS can't leak in): 20 px text, 48 px buttons, focus ring, enter/exit transitions, `prefers-reduced-motion` and Windows high-contrast support. |
+| `src/speech.ts` | Read aloud with a **local** Romanian voice only (remote voices send text online); no local voice = no button. |
+
+## Accessibility
+
+- Text 20 px+, buttons 48 px+, strong contrast; colour is never the only signal (icon + words on every state).
+- Keyboard: Esc closes the banner to its pill; in the typing guard Tab stays inside, Esc = **Nu trimit**, and focus
+  returns to the message box.
+- Screen readers: SCAM/SUSPICIOUS banners are `role="alert"`, the grey unknown-number note is a polite `status`,
+  the guard is a modal `alertdialog`.
+- Motion is short (≤ 0.25 s) and off when the system asks for reduced motion.
+- Options page: one switch and the name up front, server and topic folded away, busy and success/error states.
 
 ## Privacy
 

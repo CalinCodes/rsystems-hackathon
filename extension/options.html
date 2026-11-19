@@ -2,43 +2,74 @@
 <html lang="ro">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Scam Shield: alertă pentru familie</title>
   <style>
-    body { font: 18px/1.5 -apple-system, "Segoe UI", sans-serif; max-width: 38rem; margin: 2rem auto; padding: 0 1rem; color: #1f1b16; background: #fbf8f3; }
-    h1 { font-size: 1.6rem; }
-    label { display: block; margin-top: 1rem; font-weight: 600; }
-    input[type=text], input[type=url] { width: 100%; font-size: 18px; padding: .6rem; border: 2px solid #c9c1b6; border-radius: 12px; box-sizing: border-box; }
-    .row { display: flex; gap: .5rem; align-items: center; margin-top: 1rem; }
-    button { font-size: 18px; padding: .7rem 1.2rem; border-radius: 12px; border: 0; background: #1f4e79; color: #fff; cursor: pointer; margin-top: 1.2rem; margin-right: .5rem; }
-    button.secondary { background: #e8e1d6; color: #1f1b16; }
-    small { color: #5b544b; }
-    #status { margin-top: 1rem; font-weight: 600; min-height: 1.5em; }
+    /* System fonts only: nothing is fetched. 20 px text, 48 px targets and a visible focus ring for older readers. */
+    * { box-sizing: border-box; }
+    body { font: 20px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem;
+      color: #1f1b16; background: #fbf8f3; }
+    h1 { font-size: 1.7rem; line-height: 1.25; }
+    .lead { font-size: 1.05rem; }
+    .card { background: #fff; border: 2px solid #e2dacd; border-radius: 16px; padding: 1rem 1.25rem; margin-top: 1.25rem; }
+    label { display: block; margin-top: 1rem; font-weight: 700; }
+    input[type=text], input[type=url] { width: 100%; font-size: 20px; min-height: 52px; padding: .6rem .8rem; border: 2px solid #8a8073;
+      border-radius: 12px; background: #fff; color: #1f1b16; transition: border-color .15s ease; }
+    input[type=text]:hover, input[type=url]:hover { border-color: #1f4e79; }
+    .switch { display: flex; gap: .75rem; align-items: center; margin: 0; cursor: pointer; font-size: 1.1rem; }
+    .switch input { width: 32px; height: 32px; accent-color: #1f4e79; cursor: pointer; margin: 0; }
+    .hint { display: block; color: #4a443c; font-size: 17px; margin-top: .3rem; }
+    details { margin-top: 1.25rem; }
+    summary { cursor: pointer; font-weight: 700; min-height: 48px; display: flex; align-items: center; }
+    .buttons { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+    button { font: 700 20px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 52px; padding: .7rem 1.4rem;
+      border-radius: 12px; border: 2px solid #1f4e79; background: #1f4e79; color: #fff; cursor: pointer;
+      transition: transform .12s ease, filter .12s ease; }
+    button:hover { filter: brightness(1.1); }
+    button:active { transform: scale(.97); }
+    button[disabled] { opacity: .65; cursor: progress; }
+    button.secondary { background: #fff; color: #1f4e79; }
+    :focus-visible { outline: 4px solid #1a56db; outline-offset: 3px; }
+    #status { margin-top: 1.25rem; font-weight: 700; min-height: 1.5em; padding: 0; border-radius: 12px; }
+    #status.ok, #status.error { padding: .8rem 1rem; animation: show .2s ease-out both; }
+    #status.ok { background: #e7f5ec; color: #0f3d22; border: 2px solid #1e7a46; }
+    #status.error { background: #fdecea; color: #4a0f0b; border: 2px solid #b3261e; }
+    small { color: #4a443c; font-size: 17px; }
+    @keyframes show { from { opacity: 0; transform: translateY(-4px); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+    @media (forced-colors: active) { button, input, .card, #status { border: 2px solid CanvasText; } }
   </style>
 </head>
 <body>
   <h1>Alertă pentru o persoană de încredere</h1>
-  <p>Când Scam Shield vede o țeapă pe WhatsApp, trimite o alertă pe telefonul unei rude, prin aplicația <b>ntfy</b>.
+  <p class="lead">Când Scam Shield vede o țeapă pe WhatsApp, trimite o alertă pe telefonul unei rude, prin aplicația <b>ntfy</b>.
      Alerta spune doar numele, ora și tipul de țeapă. <b>Textul mesajelor nu pleacă niciodată de pe calculator.</b></p>
-  <p><small>Alerta trece prin serverul public ntfy.sh. Oricine știe subiectul o poate citi, deci alegeți un subiect greu de ghicit.</small></p>
 
-  <div class="row"><input id="enabled" type="checkbox" /><label for="enabled" style="margin:0">Trimite alerte</label></div>
+  <div class="card">
+    <label class="switch" for="enabled"><input id="enabled" type="checkbox" /> Trimite alerte rudei mele</label>
 
-  <label for="name">Cum vă știe ruda (de ex. „Mama”)</label>
-  <input id="name" type="text" maxlength="40" />
+    <label for="name">Cum vă știe ruda (de ex. „Mama”)</label>
+    <input id="name" type="text" maxlength="40" autocomplete="off" aria-describedby="name-hint" />
+    <span class="hint" id="name-hint">Acest nume apare pe telefonul rudei.</span>
+  </div>
 
-  <label for="server">Server ntfy</label>
-  <input id="server" type="url" placeholder="https://ntfy.sh" />
-  <small>Lăsați https://ntfy.sh. Un server propriu din rețeaua de acasă merge și el (192.168.x.x, 10.x.x.x, .local).</small>
+  <!-- WHY folded: server and topic are prefilled and work as they are; an older reader only needs the name. -->
+  <details class="card">
+    <summary>Setări pentru rudă (server și subiect)</summary>
+    <label for="server">Server ntfy</label>
+    <input id="server" type="url" placeholder="https://ntfy.sh" aria-describedby="server-hint" />
+    <span class="hint" id="server-hint">Lăsați https://ntfy.sh. Un server propriu din rețeaua de acasă merge și el (192.168.x.x, 10.x.x.x, .local).</span>
 
-  <label for="topic">Subiect ntfy (același ca în aplicația de pe telefon)</label>
-  <input id="topic" type="text" placeholder="scamshield-family-676767" />
-  <small>Litere, cifre, - și _. Alegeți ceva greu de ghicit.</small>
+    <label for="topic">Subiect ntfy (același ca în aplicația de pe telefon)</label>
+    <input id="topic" type="text" placeholder="scamshield-family-676767" aria-describedby="topic-hint" />
+    <span class="hint" id="topic-hint">Litere, cifre, - și _. Oricine știe subiectul poate citi alertele, deci alegeți ceva greu de ghicit.</span>
+  </details>
 
-  <div>
+  <div class="buttons">
     <button id="save">Salvează</button>
     <button id="test" class="secondary">Trimite un test</button>
   </div>
-  <p id="status" role="status"></p>
+  <p id="status" role="status" aria-live="polite"></p>
   <p id="last"><small></small></p>
   <p><small>O conversație sună telefonul o dată când devine țeapă, apoi din nou doar la un mesaj nou, după cel puțin 2 minute.</small></p>
   <script src="options.js"></script>

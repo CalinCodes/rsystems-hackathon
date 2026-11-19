@@ -3,6 +3,8 @@ import type { Result, Scenario } from '@ss/contracts';
 export interface BannerModel {
   tone: 'scam' | 'suspicious' | 'info';
   icon: string;
+  /** The big first line: the verdict in words, so colour is never the only signal. */
+  headline: string;
   body: string;
   /** Shown under the body when the sender is not a saved contact. */
   note: string | null;
@@ -16,6 +18,26 @@ const UNKNOWN_NOTE = 'Numărul nu este în agenda dumneavoastră.';
 // on the number already saved, not "the company's site" or "the number on the card".
 const KNOWN_CONTACT_ACTION = 'Nu trimiteți nimic și sunați persoana la numărul pe care îl aveți deja salvat.';
 const HACKED_CONTACT_TYPES = new Set(['OTHER', 'ACCOUNT_TAKEOVER']);
+
+/** Same words as the engine's lead sentence and the brief's verdict labels. */
+const HEADLINE: Record<BannerModel['tone'], string> = {
+  scam: 'Atenție, pare o țeapă!',
+  suspicious: 'Atenție, verificați înainte să răspundeți.',
+  info: 'Număr necunoscut',
+};
+
+/** The engine's warning starts with the same lead; drop it from the body so the reader never reads it twice. */
+export function stripLead(text: string, headline: string): string {
+  return text.startsWith(headline) ? text.slice(headline.length).trim() : text;
+}
+
+/** What "Ascultați" reads: the whole banner, in reading order, without the footer. */
+export function spokenText(m: BannerModel): string {
+  return [m.headline, m.body, m.note, `Ce să faceți: ${m.action}`].filter((x) => x !== null && x !== '').join(' ');
+}
+
+/** Same signature = same banner on screen, so a new harmless message does not redraw or re-animate it. */
+export const bannerSignature = (m: BannerModel): string => `${m.tone}|${m.body}|${m.note ?? ''}|${m.action}`;
 
 /** Unknown = WhatsApp shows a phone number, not a saved name. */
 export const isUnknownSender = (s: Scenario): boolean => !s.sender.known_contact && s.sender.address !== null;
@@ -34,16 +56,19 @@ export function bannerModel(r: Result, s: Scenario): BannerModel | null {
     return {
       tone: 'info',
       icon: 'ℹ️',
+      headline: HEADLINE.info,
       body: 'Vă scrie un număr necunoscut, care nu este în agenda dumneavoastră.',
       note: null,
       action: 'Nu trimiteți bani, coduri sau date până nu aflați sigur cine este.',
       footer,
     };
   }
+  const tone = r.verdict === 'SCAM' ? 'scam' : 'suspicious';
   return {
-    tone: r.verdict === 'SCAM' ? 'scam' : 'suspicious',
+    tone,
     icon: r.verdict === 'SCAM' ? '⛔' : '⚠️',
-    body: r.warning.ro,
+    headline: HEADLINE[tone],
+    body: stripLead(r.warning.ro, HEADLINE[tone]),
     note: unknown ? UNKNOWN_NOTE : null,
     action: s.sender.known_contact && HACKED_CONTACT_TYPES.has(r.scamType) ? KNOWN_CONTACT_ACTION : r.warning.action,
     footer,
