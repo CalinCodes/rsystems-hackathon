@@ -10,7 +10,9 @@ describe('analyze on the invented fixtures', () => {
   it('F01: new-number family thread → SCAM, alert at message 4', async () => {
     const r = await analyze(fixture('F01'));
     expect([r.verdict, r.scamType, r.score, r.firstAlert]).toEqual(['SCAM', 'FAMILY_EMERGENCY', 80, 4]);
-    expect(r.timeline).toEqual([20, 20, 20, 60, 60, 80]);
+    // Message 4 ("o factură de plătit azi") asks nothing of the reader in that sentence, so urgency waits for
+    // message 5 ("expiră în o oră"). The alert still starts at 4, on the payment request.
+    expect(r.timeline).toEqual([20, 20, 20, 45, 60, 80]);
   });
   it('F02: prize SMS → SUSPICIOUS prize/lottery', async () => {
     const r = await analyze(fixture('F02'));

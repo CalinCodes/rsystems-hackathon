@@ -1,17 +1,23 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import { ThiefFigure } from './ThiefFigure';
 
-/** Calm waiting state. The pulse is decoration only; the words carry the meaning. */
+/** Waiting state: the thief tiptoes while the shield checks. The figure is decoration; the words carry the meaning. */
 export function Thinking() {
   const reduce = useReducedMotion();
   return (
-    <p role="status" className="flex items-center justify-center gap-4 py-10 font-heading text-2xl">
-      <motion.span
+    <div
+      role="status"
+      className="flex flex-col items-center gap-4 overflow-hidden rounded-card bg-linear-to-br from-night to-night-2 px-6 py-8 text-surface shadow-soft"
+    >
+      <motion.div
         aria-hidden="true"
-        className="size-4 rounded-full bg-ink/60"
-        animate={reduce ? undefined : { opacity: [0.35, 1, 0.35], scale: [0.9, 1.2, 0.9] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      Verificăm…
-    </p>
+        animate={reduce ? undefined : { x: [-80, 80, 80, -80, -80], scaleX: [1, 1, -1, -1, 1] }}
+        transition={{ duration: 4, times: [0, 0.45, 0.5, 0.95, 1], repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <ThiefFigure mood="sneak" className="size-24 drop-shadow-lg" />
+      </motion.div>
+      <p className="font-heading text-2xl">Verificăm…</p>
+      <p className="text-lg text-surface/80">Căutăm semnele unei înșelăciuni.</p>
+    </div>
   );
 }

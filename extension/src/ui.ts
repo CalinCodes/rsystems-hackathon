@@ -3,6 +3,9 @@
 // change between WhatsApp releases. Inside the shadow root the styles below are the only ones that apply.
 // System fonts only: nothing is fetched from anywhere.
 
+// The mascot lives in the app so both draw the same figure; it is plain TS with no React, so it bundles here too.
+import { thiefDataUrl, type ThiefMood } from '../../app/src/thief';
+
 const HOST_ID = 'scam-shield-root';
 const LEAVE_MS = 200;
 
@@ -19,6 +22,8 @@ const STYLES = `
 .banner.escalate { animation: drop .24s ease-out both, pulse 1.1s ease-out .25s 2; }
 .headline { display: flex; align-items: center; gap: 10px; margin: 0 48px 8px 0; font-size: 23px; font-weight: 800; }
 .headline .icon { font-size: 30px; line-height: 1; }
+.figure { width: 72px; height: 72px; flex-shrink: 0; margin: -6px 2px -6px -6px; animation: pop .5s cubic-bezier(.3,1.5,.6,1) both; }
+@keyframes pop { from { opacity: 0; transform: scale(.5) rotate(-10deg); } }
 .body { margin: 0 0 10px; font-weight: 600; }
 .note { margin: 0 0 10px; }
 .action { margin: 0 0 14px; padding: 10px 14px; border-radius: 12px; background: var(--soft); border-left: 6px solid var(--line);
@@ -90,4 +95,17 @@ export function button(label: string, cls: string, onClick: () => void): HTMLBut
   b.type = 'button';
   b.addEventListener('click', onClick);
   return b;
+}
+
+/**
+ * The Scam Shield thief, same drawing as the app. Decorative (empty alt): the words beside it carry the verdict.
+ * If WhatsApp's page rules ever refuse the image, it simply disappears and the banner still works.
+ */
+export function thiefImg(mood: ThiefMood): HTMLImageElement {
+  const img = node('img', 'figure');
+  img.alt = '';
+  img.setAttribute('aria-hidden', 'true');
+  img.addEventListener('error', () => img.remove());
+  img.src = thiefDataUrl(mood);
+  return img;
 }

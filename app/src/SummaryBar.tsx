@@ -2,6 +2,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { Verdict } from '@ss/contracts';
 import { countVerdicts, type DossierRow, type Progress } from './dossier';
 import { SPRING } from './motionConfig';
+import { moodFor } from './thief';
+import { ThiefFigure } from './ThiefFigure';
 import { VERDICT_LOOK } from './verdict';
 
 interface SummaryBarProps {
@@ -24,7 +26,8 @@ export function SummaryBar({ rows, progress }: SummaryBarProps) {
           {rows.length} {rows.length === 1 ? 'mesaj încărcat' : 'mesaje încărcate'}
         </p>
         {ORDER.map((v) => (
-          <p key={v} className={`text-2xl font-semibold ${VERDICT_LOOK[v].cls.split(' ')[0]}`}>
+          <p key={v} className={`flex items-center gap-2 text-2xl font-semibold ${VERDICT_LOOK[v].cls.split(' ')[0]}`}>
+            <ThiefFigure mood={moodFor(v)} className="size-12" />
             <span aria-hidden="true">{VERDICT_LOOK[v].icon}</span> {VERDICT_LOOK[v].short}: {counts[v]}
           </p>
         ))}
@@ -35,13 +38,23 @@ export function SummaryBar({ rows, progress }: SummaryBarProps) {
           <p className="text-xl font-semibold">
             Verificăm… {progress.done} / {progress.total}
           </p>
-          <div className="h-3 flex-1 overflow-hidden rounded-full bg-ink/10">
+          <div className="relative h-3 flex-1 rounded-full bg-ink/10">
             <motion.div
-              className="h-full rounded-full bg-ink/70"
+              className="h-full rounded-full bg-linear-to-r from-night-2 to-night"
               initial={false}
               animate={{ width: `${share}%` }}
               transition={reduce ? { duration: 0 } : SPRING}
             />
+            {/* The thief runs ahead of the bar while the folder is checked. */}
+            <motion.div
+              aria-hidden="true"
+              className="absolute -top-9 -ml-5"
+              initial={false}
+              animate={{ left: `${share}%` }}
+              transition={reduce ? { duration: 0 } : SPRING}
+            >
+              <ThiefFigure mood="sneak" className="size-10" />
+            </motion.div>
           </div>
         </div>
       )}

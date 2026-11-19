@@ -1,7 +1,7 @@
 import type { Result } from '@ss/contracts';
 import { guardHit, guardText, type GuardKind } from './guard';
 import { localVoice, speak, stopSpeaking } from './speech';
-import { button, layer, leave, node } from './ui';
+import { button, layer, leave, node, thiefImg } from './ui';
 
 /** What the guard needs to know about the chat that is open right now. */
 export interface GuardState {
@@ -62,7 +62,7 @@ function renderGuard(kind: GuardKind, action: string, onSendAnyway: () => void):
   box.setAttribute('aria-modal', 'true');
   const message = guardText(kind, action);
   const head = node('p', 'headline');
-  head.append(node('span', 'icon', '✋'), node('span', '', 'Stați puțin!'));
+  head.append(thiefImg('sneak'), node('span', 'icon', '✋'), node('span', '', 'Stați puțin!'));
   const text = node('p', 'body', message.replace(/^Stați puțin!\s*/, ''));
   text.id = 'scam-shield-guard-text';
   box.setAttribute('aria-labelledby', text.id);

@@ -4,26 +4,86 @@ import { NOT, clauseAt, firstHit, isDenied, makeHit, perSenderMessage, type MsgC
 const re = (parts: string[]): RegExp => new RegExp(parts.join('|'), 'g');
 const sender = (flag: FlagCode, rx: RegExp): Rule => (c) => perSenderMessage(c, (m) => firstHit(flag, m, rx));
 
-const URGENCY = re([
+// WHY two lists: a time word ("azi", "acum", "imediat") is only pressure when the same sentence pushes the READER to
+// act. "Coletul va fi livrat azi" or "plata a fost efectuată azi" is a notice; "plătiți azi" is pressure.
+// Pressure words and deadline phrases ("urgent", "până la", "în 2 ore", "expiră") push on their own.
+const URGENCY_ALWAYS = re([
   String.raw`\burgent\w*`,
+  // "in 24 de ore", "doar 30 min", "maxim 2 ore" (not "peste 2 ore": "ajunge peste 2 ore" is a notice)
+  String.raw`\b(?:in|doar|maxim|sub)\s+(?:\d+|o|un|doua|trei|cinci|zece)\s*(?:de\s+)?(?:h|ore|ora|min|minute|minut|secunde|sec)\b`,
+  String.raw`\bin\s+\d{1,3}\s?h\b`,
+  // "mai aveti 48 h la dispozitie", "mai ai doar 2 zile"
+  String.raw`\bmai (?:aveti|ai)\b[^.!?;\n]{0,20}\b(?:\d+\s?h|ore|ora|zile|zi|minute|min)\b`,
+  // deadlines: "pana la 15.03", "pana pe 3 mai", "pana maine", "pana vineri", "pana la ora 18"
+  String.raw`\bpana\s+(?:la\s+|pe\s+)?(?:azi|astazi|maine|diseara|dimineata|\d{1,2}\s?[./-]\s?\d{1,2}(?:\s?[./-]\s?\d{2,4})?|(?:\d{1,2}\s+)?(?:ian|feb|mar|apr|mai|iun|iul|aug|sep|oct|nov|dec)\w*|ora\s+\d{1,2}|luni|marti|miercuri|joi|vineri|sambata|duminica)`,
+  String.raw`\bultima (?:sansa|zi|ocazie)\b`,
+  String.raw`\btermen(?:ul)? limita\b`,
+  String.raw`\bexpir\w*`,
+  String.raw`\bgrab[ie]\w*`,
+  String.raw`\bnu mai (?:astepta|intarzia)\w*`,
+  String.raw`\bin cel mai scurt timp\b`,
+]);
+
+const URGENCY_TIME = re([
   String.raw`\bimediat\b`,
   String.raw`\bcat mai repede\b`,
   String.raw`\bchiar acum\b|\bacum\b`,
   String.raw`\b(?:azi|astazi)\b`,
   String.raw`\bintr-?o (?:ora|jumatate de ora)\b|\bintr-?un (?:sfert de ora|minut)\b`,
-  // "24h", "24 h", "in 24 de ore", "peste 2 ore", "doar 30 min"
   String.raw`\b\d{1,3}\s?h\b`,
-  String.raw`\b(?:in|peste|timp de|doar|maxim|sub)\s+(?:\d+|o|un|doua|trei|cinci|zece)\s*(?:de\s+)?(?:h|ore|ora|min|minute|minut|secunde|sec)\b`,
-  // deadlines: "pana la 15.03", "pana pe 3 mai", "pana maine", "pana vineri", "pana la ora 18"
-  String.raw`\bpana\s+(?:la\s+|pe\s+)?(?:azi|astazi|maine|diseara|dimineata|\d{1,2}\s?[./-]\s?\d{1,2}(?:\s?[./-]\s?\d{2,4})?|(?:\d{1,2}\s+)?(?:ian|feb|mar|apr|mai|iun|iul|aug|sep|oct|nov|dec)\w*|ora\s+\d{1,2}|luni|marti|miercuri|joi|vineri|sambata|duminica)`,
-  String.raw`\bultima (?:sansa|zi|ocazie)\b`,
+  String.raw`\b(?:peste|timp de)\s+(?:\d+|o|un|doua|trei|cinci|zece)\s*(?:de\s+)?(?:h|ore|ora|min|minute|minut)\b`,
   String.raw`\btermen\w*`,
-  String.raw`\bexpir\w*`,
   String.raw`\brepede\b`,
-  String.raw`\bgrab[ie]\w*`,
-  String.raw`\bnu mai (?:astepta|intarzia)\w*`,
-  String.raw`\bin cel mai scurt timp\b`,
 ]);
+
+/** The reader is asked to act: an imperative, "trebuie să", a polite request ("vă rog") or a "poți/puteți" question. */
+const ASKS_READER = new RegExp(
+  [
+    // formal imperatives (2nd person plural), with an optional clitic: "trimiteti-mi", "sunati-ne", "dati-i"
+    String.raw`\b(?:platiti|achitati|accesati|trimiteti|raspundeti|confirmati|sunati|apasati|completati|intrati|introduceti|transferati|virati|depuneti|verificati|actualizati|descarcati|instalati|deblocati|actionati|spuneti|dati|faceti|scrieti|reveniti|validati|autentificati|logati|semnati|scoateti|retrageti|ridicati|mergeti|veniti|aduceti|cumparati|luati|pregatiti|lasati|deschideti|cititi|dictati)(?:-(?:mi|ne|l|o|le|i))?\b`,
+    // informal imperatives (2nd person singular)
+    String.raw`\b(?:plateste|achita|acceseaza|trimite-?mi|trimite|raspunde|confirma|suna-?ma|suna|apasa|completeaza|intra|introdu|transfera|vireaza|verifica|actualizeaza|descarca|instaleaza|deblocheaza|spune-?mi|scrie-?mi|fa-?mi|da-?mi)\b`,
+    String.raw`\btrebuie sa\b`,
+    String.raw`\b(?:va|te) (?:rog|rugam)\b`,
+    // a request as a question: "poți să-mi trimiți azi banii?", "puteți confirma acum?"
+    String.raw`\b(?:poti|puteti)\b`,
+  ].join('|'),
+);
+
+/** Same sentence = between . ! ? ; or newline; a dot inside a number ("2.500", "12.30") does not end it. */
+const isStop = (norm: string, i: number): boolean => {
+  const ch = norm[i];
+  if (ch === '.') return !/\d/.test(norm[i + 1] ?? '');
+  return ch === '!' || ch === '?' || ch === ';' || ch === '\n';
+};
+
+// A plain scan, not a regex search, done once per message: linear on long inputs (see perf.test.ts).
+function sentenceEnds(norm: string): number[] {
+  const ends: number[] = [];
+  for (let i = 0; i < norm.length; i++) if (isStop(norm, i)) ends.push(i);
+  ends.push(norm.length);
+  return ends;
+}
+
+const urgencyRule: Rule = (c) =>
+  perSenderMessage(c, (m: MsgCtx) => {
+    const always = firstHit('RF_URGENCY', m, URGENCY_ALWAYS);
+    if (always) return always;
+    const ends = sentenceEnds(m.norm);
+    const asks = new Map<number, boolean>();
+    let s = 0;
+    for (const match of m.norm.matchAll(URGENCY_TIME)) {
+      const idx = match.index ?? 0;
+      while ((ends[s] ?? m.norm.length) < idx) s++; // matches come in order, so the pointer only moves forward
+      if (!asks.has(s)) {
+        const start = s === 0 ? 0 : (ends[s - 1] ?? 0) + 1;
+        asks.set(s, ASKS_READER.test(m.norm.slice(start, ends[s])));
+      }
+      if (!asks.get(s) || isDenied(m.norm, idx)) continue;
+      return makeHit('RF_URGENCY', m, idx, match[0].length);
+    }
+    return null;
+  });
 
 const TOO_GOOD = re([
   String.raw`\b(?:ati|ai) castigat\b`,
@@ -129,7 +189,7 @@ const secrecy: Rule = (c) =>
     return null;
   });
 
-export const urgency = sender('RF_URGENCY', URGENCY);
+export const urgency = urgencyRule;
 export const tooGood = sender('RF_TOO_GOOD', TOO_GOOD);
 export const threat = sender('RF_THREAT', THREAT);
 export const emotionalPressure = sender('RF_EMOTIONAL_PRESSURE', EMOTIONAL);

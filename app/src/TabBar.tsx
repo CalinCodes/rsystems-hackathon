@@ -19,8 +19,8 @@ export function TabBar({ view, onView }: TabBarProps) {
           type="button"
           aria-current={view === t.id ? 'page' : undefined}
           onClick={() => onView(t.id)}
-          className={`min-h-14 rounded-card border-2 px-6 text-xl font-semibold ${
-            view === t.id ? 'border-ink bg-ink text-surface' : 'border-ink/30 bg-surface'
+          className={`min-h-14 rounded-card border-2 px-6 text-xl font-semibold transition duration-200 hover:-translate-y-0.5 active:translate-y-0 ${
+            view === t.id ? 'border-night bg-night text-surface shadow-soft' : 'border-ink/30 bg-surface hover:border-night'
           }`}
         >
           {t.label}

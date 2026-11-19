@@ -1,4 +1,4 @@
-import { checkConfig, sendPage, type PagerConfig, type PagerProblem } from './pager';
+import { checkConfig, PUBLIC_NTFY, sendPage, type PagerConfig, type PagerProblem } from './pager';
 import { loadLast, loadPager, savePager } from './pagerStore';
 
 const PROBLEM_RO: Record<PagerProblem, string> = {
@@ -56,6 +56,8 @@ async function validateAndGrant(c: PagerConfig): Promise<boolean> {
     focusField(checked.problem);
     return false;
   }
+  // ntfy.sh is already in the manifest's host permissions. Asking again would fail outside a click (autosave).
+  if (checked.origin === PUBLIC_NTFY) return true;
   const granted = await chrome.permissions.request({ origins: [`${checked.origin}/*`] });
   if (!granted) status('Fără permisiune pentru server nu putem trimite alerte.');
   return granted;
@@ -73,7 +75,9 @@ async function onTest(): Promise<void> {
   if (!(await validateAndGrant(c))) return;
   try {
     await sendPage(c, { scamType: 'OTHER' }, { test: true });
-    status('Test trimis. Verificați telefonul.', 'ok');
+    // The test does not need the switch, so a working test used to hide that real scams were never sent.
+    if (c.enabled) status('Test trimis. Verificați telefonul.', 'ok');
+    else status('Testul a mers, dar alertele reale sunt OPRITE. Bifați „Trimite alerte rudei mele”.');
   } catch (e) {
     const limited = e instanceof Error && e.message === 'ntfy 429';
     status(limited ? 'ntfy.sh a refuzat: prea multe alerte de pe această rețea azi (limită 250 pe zi). Folosiți hotspotul telefonului sau un server ntfy propriu.' : 'Nu am putut trimite. Verificați conexiunea la internet.');
@@ -88,14 +92,25 @@ void loadPager().then((c) => {
 });
 $('save').addEventListener('click', () => void busy('save', 'Se salvează…', onSave));
 $('test').addEventListener('click', () => void busy('test', 'Se trimite…', onTest));
+// Save as soon as something changes: a ticked switch that was never saved used to leave real alerts off.
+for (const id of ['enabled', 'name', 'server', 'topic']) $(id).addEventListener('change', () => void onSave());
 
 const time = (ms: number): string => new Date(ms).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+const SKIPPED_RO: Record<string, string> = {
+  disabled: 'alertele sunt oprite. Bifați „Trimite alerte rudei mele”',
+  name: 'lipsește numele. Scrieți cum vă știe ruda',
+  topic: 'subiectul nu este corect',
+  server: 'adresa serverului nu este corectă',
+  not_local: 'serverul nu este permis',
+};
 void loadLast().then((l) => {
   if (!l) return;
   $('last').textContent =
     l.outcome === 'sent'
       ? `Ultima alertă: trimisă la ${time(l.at)}.`
-      : l.error === 'ntfy 429'
-        ? `Ultima alertă (${time(l.at)}) a fost refuzată de ntfy.sh: prea multe alerte de pe această rețea azi. Folosiți altă rețea (de ex. hotspot) sau un server ntfy propriu.`
-        : `Ultima alertă: NU a putut fi trimisă la ${time(l.at)} (${l.error ?? 'eroare'}). Verificați internetul.`;
+      : l.outcome === 'skipped'
+        ? `La ${time(l.at)} a fost o țeapă, dar ruda NU a fost anunțată: ${SKIPPED_RO[l.error ?? ''] ?? 'setările nu sunt complete'}.`
+        : l.error === 'ntfy 429'
+          ? `Ultima alertă (${time(l.at)}) a fost refuzată de ntfy.sh: prea multe alerte de pe această rețea azi. Folosiți altă rețea (de ex. hotspot) sau un server ntfy propriu.`
+          : `Ultima alertă: NU a putut fi trimisă la ${time(l.at)} (${l.error ?? 'eroare'}). Verificați internetul.`;
 });

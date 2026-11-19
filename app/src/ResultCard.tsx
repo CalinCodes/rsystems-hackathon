@@ -7,6 +7,8 @@ import { Timeline } from './Timeline';
 import { WarningCard } from './WarningCard';
 import type { Lang } from './lang';
 import { SPRING } from './motionConfig';
+import { moodFor } from './thief';
+import { ThiefFigure } from './ThiefFigure';
 import { VERDICT_LOOK, scamTypeLabel } from './verdict';
 
 interface ResultCardProps {
@@ -27,9 +29,19 @@ export function ResultCard({ result, messages, lang, onLang }: ResultCardProps) 
       transition={SPRING}
       className={`flex flex-col gap-8 rounded-card border-2 bg-surface p-8 shadow-soft ${look.cls}`}
     >
-      <h2 className="text-3xl font-semibold md:text-4xl">
-        <span aria-hidden="true">{look.icon}</span> {look.word}
-      </h2>
+      <div className="flex items-center gap-5">
+        <motion.div
+          initial={reduce ? false : { scale: 0.5, rotate: -8, opacity: 0 }}
+          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+          transition={{ ...SPRING, delay: 0.15 }}
+          className="shrink-0"
+        >
+          <ThiefFigure mood={moodFor(result.verdict)} className="size-24 md:size-32" />
+        </motion.div>
+        <h2 className="text-3xl font-semibold md:text-4xl">
+          <span aria-hidden="true">{look.icon}</span> {look.word}
+        </h2>
+      </div>
       <WarningCard warning={result.warning} lang={lang} onLang={onLang} />
       <ExtrasBar result={result} />
       <div className="flex flex-col gap-2 text-ink/70">

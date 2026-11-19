@@ -8,14 +8,35 @@
   /* Darker than the first pick (#b7791f, 3.6:1 on white): this one is 5.7:1, so amber text passes AA. */
   --color-suspicious: #8f5c0a;
   --color-scam: #c0392b;
+  /* Night scene of the header: white text on these is above 12:1. */
+  --color-night: #141a2e;
+  --color-night-2: #2a3358;
+  --color-spot: #ffd36e;
   --radius-card: 18px;
+  --radius-container: 28px;
   --shadow-soft: 0 12px 40px -16px rgb(42 33 24 / 0.22);
   --font-heading: "Fraunces", serif;
   --font-body: "Source Sans 3", sans-serif;
+  --animate-twinkle: twinkle 3s ease-in-out infinite;
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.25; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+}
+
+/* The searchlight cone in the header: narrow at the lamp, wide where it lands. */
+@utility searchlight {
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
 }
 
 body {
-  background: var(--color-bg);
+  /* Two soft glows behind the page: depth without lowering text contrast. */
+  background:
+    radial-gradient(60rem 30rem at 10% -10%, rgb(42 51 88 / 0.08), transparent 70%),
+    radial-gradient(50rem 30rem at 100% 0%, rgb(255 211 110 / 0.14), transparent 70%),
+    var(--color-bg);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-body);
   font-size: 1.125rem; /* 18px: readable baseline for elderly users */
@@ -23,4 +44,17 @@ body {
 
 h1, h2, h3 {
   font-family: var(--font-heading);
+}
+
+:focus-visible {
+  outline: 4px solid #1a56db;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

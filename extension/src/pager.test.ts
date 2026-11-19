@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Result } from '@ss/contracts';
-import { checkConfig, COOLDOWN_MS, decidePage, EMPTY_PAGER, isLocalHost, pagerPayload, sendPage, type PagerConfig } from './pager';
+import { checkConfig, COOLDOWN_MS, decideAlert, decidePage, EMPTY_PAGER, isLocalHost, pagerPayload, sendPage, type PagerConfig } from './pager';
 
 const cfg: PagerConfig = { enabled: true, server: 'http://192.168.1.20:8090', topic: 'familia-pop-7k2', name: 'Mama' };
 const r = (verdict: Result['verdict'], scamType: Result['scamType'] = 'BANK_IMPERSONATION') => ({ verdict, scamType }) as Result;
@@ -70,5 +70,22 @@ describe('pager', () => {
     const bad = (async () => new Response('', { status: 500 })) as unknown as typeof fetch;
     await expect(sendPage(cfg, r('SCAM'), { fetchImpl: bad })).rejects.toThrow('ntfy 500');
     await expect(sendPage({ ...cfg, server: 'https://example.com' }, r('SCAM'), { fetchImpl: ok })).rejects.toThrow('not_local');
+  });
+});
+
+describe('decideAlert', () => {
+  const now = 1_000_000;
+  it('sends on the first SCAM of a chat when the settings are complete', () => {
+    expect(decideAlert(cfg, undefined, r('SCAM'), 'm1', now)).toEqual({ send: true });
+  });
+  it('reports a scam it could not send because the switch is off or a field is missing', () => {
+    expect(decideAlert({ ...cfg, enabled: false }, undefined, r('SCAM'), 'm1', now)).toEqual({ send: false, skipped: 'disabled' });
+    expect(decideAlert({ ...cfg, name: '' }, undefined, r('SCAM'), 'm1', now)).toEqual({ send: false, skipped: 'name' });
+  });
+  it('stays quiet without a report for SUSPICIOUS, an already-paged message, or the cooldown', () => {
+    expect(decideAlert(cfg, undefined, r('SUSPICIOUS'), 'm1', now)).toEqual({ send: false, skipped: null });
+    expect(decideAlert(cfg, { at: now - 10, msg: 'm1' }, r('SCAM'), 'm1', now)).toEqual({ send: false, skipped: null });
+    expect(decideAlert(cfg, { at: now - 10, msg: 'm1' }, r('SCAM'), 'm2', now)).toEqual({ send: false, skipped: null });
+    expect(decideAlert(cfg, { at: now - COOLDOWN_MS, msg: 'm1' }, r('SCAM'), 'm2', now)).toEqual({ send: true });
   });
 });
