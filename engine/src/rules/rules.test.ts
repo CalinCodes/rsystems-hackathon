@@ -70,6 +70,13 @@ describe('suspicious contact', () => {
     expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro.evil.com'])).toContain('RF_SUSPICIOUS_CONTACT');
     expect(flags(['Banca Dunărea: https://bancadunarea.ro@evil.xyz/x'])).toContain('RF_SUSPICIOUS_CONTACT');
   });
+  it('flags disguised authorities even with no organisation claimed', () => {
+    expect(flags(['Intrați https://bancadunarea.ro@evil.com/x'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Intrați https://bancadunarea.ro\@evil.com/x'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('treats a trailing-dot host as the same host', () => {
+    expect(flags(['Banca Dunărea: https://bancadunarea.ro./cont'])).toEqual([]);
+  });
   it('flags unofficial callback numbers and personal-mobile senders', () => {
     expect(flags(['CurierExpres: sunați la 0700 000 111'])).toContain('RF_SUSPICIOUS_CONTACT');
     expect(flags(['Banca Dunărea: cont blocat'], { address: '+40 700 000 111' })).toContain('RF_SUSPICIOUS_CONTACT');

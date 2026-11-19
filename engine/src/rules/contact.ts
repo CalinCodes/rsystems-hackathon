@@ -20,11 +20,24 @@ const SHORTENERS = /^(?:bit\.ly|tinyurl\.com|cutt\.ly|t\.ly|rb\.gy|is\.gd|goo\.g
 const RISKY_TLD = /\.(?:xyz|top|click|link|site|online|example)$/;
 const MOBILE = /^(?:\+40|0040|0)7\d{8}$/;
 
-/** Authority only, minus userinfo and port: "bancadunarea.ro@evil.xyz" is really host evil.xyz. */
+/**
+ * Host as the victim's browser would resolve it (WHATWG parser), not string slicing:
+ * "bancadunarea.ro@evil.xyz", "bancadunarea.ro\@evil.xyz" and trailing dots all differ between hand-rolled parsers.
+ * Unparseable → '' which is never official, so it gets flagged.
+ */
 const hostOf = (url: string): string => {
-  const authority = url.toLowerCase().replace(/^https?:\/\//, '').split(/[/?#]/)[0] ?? '';
-  const afterUser = authority.slice(authority.lastIndexOf('@') + 1);
-  return (afterUser.split(':')[0] ?? '').replace(/^www\./, '');
+  try {
+    const u = new URL(/^https?:\/\//i.test(url) ? url : `http://${url}`);
+    return u.hostname.toLowerCase().replace(/\.$/, '').replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+};
+
+/** Userinfo or backslash in the authority is a classic way to make a link read as another domain. */
+const hasDisguisedAuthority = (url: string): boolean => {
+  const authority = url.replace(/^https?:\/\//i, '').split(/[/?#]/)[0] ?? '';
+  return authority.includes('@') || authority.includes('\\');
 };
 
 /** Exact match or true subdomain: "bancadunarea.ro.evil.com" must NOT pass. */
@@ -39,7 +52,8 @@ function messageHits(m: MsgCtx, claimed: Org[]): Hit[] {
   for (const url of extractUrls(m.raw)) {
     const host = hostOf(url);
     const official = ORGS.some((o) => isOfficialHost(host, o.site));
-    if (SHORTENERS.test(host)) flag(url);
+    if (hasDisguisedAuthority(url) || host === '') flag(url);
+    else if (SHORTENERS.test(host)) flag(url);
     else if (claimed.length > 0 && !official) flag(url);
     else if (claimed.length === 0 && RISKY_TLD.test(host)) flag(url);
   }
