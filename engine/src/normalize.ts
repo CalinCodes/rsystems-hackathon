@@ -35,7 +35,8 @@ export interface Amount {
 
 // Unicode-aware like URL_RE: an ASCII-only pattern would skip "user@bаncadunarea.ro" (Cyrillic а) entirely, and
 // URL_RE refuses to start a host right after "@", so neither extractor would see it.
-const EMAIL_RE = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*\.\p{L}{2,}/giu;
+// Leading lookbehind: start only at the beginning of a local-part run, never mid-run (avoids quadratic rescans).
+const EMAIL_RE = /(?<![\p{L}\p{N}._%+-])[\p{L}\p{N}._%+-]+@[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*\.\p{L}{2,}/giu;
 /**
  * Bare hosts are matched as the WHOLE dotted token, ending only at a real boundary. A TLD allowlist inside the regex
  * would stop at "bancadunarea.ro" in "bancadunarea.ro.evil.zzz" and report an official-looking host.

@@ -55,7 +55,9 @@ const isOfficialHost = (host: string, site: string): boolean => host === site ||
 const claimedIn = (text: string): Org[] => ORGS.filter((o) => o.nameRe.test(text));
 
 // NFKC already folds U+FF0E to "." and U+FF61 to U+3002, so those two are the only dot lookalikes left to match.
-const HOST_RUN = /[\p{L}\p{N}\p{M}\p{Cf}_@+%-]+(?:[.。][\p{L}\p{N}\p{M}\p{Cf}_@+%-]+)+/gu;
+// The leading lookbehind makes a match start only at the START of a run. Without it the engine retries from every
+// position inside a long run, scanning to its end each time: quadratic (5 s on 20k zero-width characters).
+const HOST_RUN = /(?<![\p{L}\p{N}\p{M}\p{Cf}_@+%-])[\p{L}\p{N}\p{M}\p{Cf}_@+%-]+(?:[.。][\p{L}\p{N}\p{M}\p{Cf}_@+%-]+)+/gu;
 const INVISIBLE = /[\p{Cf}\p{M}]/u;
 
 /**
