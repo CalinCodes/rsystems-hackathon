@@ -3,17 +3,25 @@ import catalog from '@ss/contracts/catalog.json';
 import { extractEmails, extractPhones, extractUrls, normalizeText } from '../normalize';
 import { makeHit, type MsgCtx, type Rule } from './util';
 
-interface Org {
+export interface Org {
+  /** Display name from the catalog, e.g. "Banca Dunărea". */
+  name: string;
+  /** Normalized, space-tolerant name as regex source: "banca\s*dunarea". */
+  nameSrc: string;
   site: string;
   phones: string[];
   /** "Banca Dunărea" → /\bbanca\s*dunarea\b/ so "BancaDunarea" and "banca dunarea" both match. */
   nameRe: RegExp;
 }
 
-const ORGS: Org[] = catalog.organisations.map((o) => ({
+const nameSource = (name: string): string => normalizeText(name).split(/\s+/).join('\\s*');
+
+export const ORGS: Org[] = catalog.organisations.map((o) => ({
+  name: o.name,
+  nameSrc: nameSource(o.name),
   site: o.site,
   phones: o.phone ? [o.phone.replace(/\D/g, '')] : [],
-  nameRe: new RegExp(`\\b${normalizeText(o.name).split(/\s+/).join('\\s*')}\\b`),
+  nameRe: new RegExp(`\\b${nameSource(o.name)}\\b`),
 }));
 
 const SHORTENERS = /^(?:bit\.ly|tinyurl\.com|cutt\.ly|t\.ly|rb\.gy|is\.gd|goo\.gl|ow\.ly)$/;
@@ -126,15 +134,10 @@ export const suspiciousContact: Rule = (c) => {
   for (const m of c.msgs) {
     if (m.from !== 'sender') continue;
     const claimed = [...new Set([...nameClaims, ...claimedIn(m.norm)])];
-    const before = out.length;
     out.push(...messageHits(m, claimed));
     if (!senderDone && claimed.length > 0) {
       out.push(...senderHits(c, m, claimed));
       senderDone = true;
-    }
-    // Naming an organisation while the contact details don't match it is impersonation, not just a odd link.
-    if (claimed.length > 0 && out.length > before) {
-      out.push({ flag: 'RF_IMPERSONATION', msg: m.n, evidence: claimed[0]?.site ?? '', src: 'rule' });
     }
   }
   return out;

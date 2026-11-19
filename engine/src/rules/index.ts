@@ -5,7 +5,8 @@ import { dataRequest } from './data';
 import { newNumber } from './newNumber';
 import { paymentRequest } from './payment';
 import { remoteAccess } from './remote';
-import { channelSwitch, emotionalPressure, impersonation, secrecyRule, threat, tooGood, urgency } from './soft';
+import { impersonation } from './impersonation';
+import { channelSwitch, emotionalPressure, secrecyRule, threat, tooGood, urgency } from './soft';
 import { buildCtx, type Rule } from './util';
 
 const RULES: Rule[] = [

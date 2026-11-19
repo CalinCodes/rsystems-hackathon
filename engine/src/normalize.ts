@@ -55,15 +55,46 @@ function isDomain(domain: string): boolean {
   return /^\p{L}{2,}$/u.test(labels[labels.length - 1] ?? '');
 }
 
+const DOMAIN_CHAR = /[\p{L}\p{N}_.-]/u;
+
+/** Length of the run of domain characters starting at `from` (code-point aware, linear). */
+function domainPrefixLength(run: string, from: number): number {
+  let i = from;
+  while (i < run.length) {
+    const cp = run.codePointAt(i);
+    if (cp === undefined) break;
+    const ch = String.fromCodePoint(cp);
+    if (!DOMAIN_CHAR.test(ch)) break;
+    i += ch.length;
+  }
+  return i - from;
+}
+
+/** Drop trailing "." "-" "_" with a plain loop: a regex like /[.-]+$/ is retried from every position (quadratic). */
+function trimDomainEnd(s: string): string {
+  let e = s.length;
+  while (e > 0 && (s[e - 1] === '.' || s[e - 1] === '-' || s[e - 1] === '_')) e--;
+  return s.slice(0, e);
+}
+
+/**
+ * For each run holding "@", try the "@" positions right to left and keep the first with a valid domain after it.
+ * WHY not just "the last @": junk after the address ("scam@evil.xyz@", "scam@evil.xyz@1") must not make the whole
+ * address vanish. Each domain scan stops at the next "@" (not a domain character), so the total work stays linear.
+ */
 function emailSpans(text: string): EmailSpan[] {
   const out: EmailSpan[] = [];
   for (const m of text.matchAll(EMAIL_CHARS)) {
-    if (!m[0].includes('@')) continue;
-    const value = m[0].replace(/[.%+_-]+$/, ''); // sentence punctuation after the address is not part of it
-    const at = value.lastIndexOf('@');
-    if (at <= 0 || !isDomain(value.slice(at + 1))) continue;
+    const run = m[0];
+    if (!run.includes('@')) continue;
     const index = m.index ?? 0;
-    out.push({ index, end: index + value.length, value });
+    for (let at = run.lastIndexOf('@'); at > 0; at = run.lastIndexOf('@', at - 1)) {
+      const domain = trimDomainEnd(run.slice(at + 1, at + 1 + domainPrefixLength(run, at + 1)));
+      if (!isDomain(domain)) continue;
+      const end = at + 1 + domain.length;
+      out.push({ index, end: index + end, value: run.slice(0, end) });
+      break;
+    }
   }
   return out;
 }
@@ -123,7 +154,11 @@ export function extractUrls(raw: string): string[] {
   for (const m of text.matchAll(SCHEME_URL_RE)) found.push({ index: m.index ?? 0, url: m[0] });
   const noScheme = blank(text, SCHEME_URL_RE);
   const ranges: [number, number][] = [];
+  let lastEnd = 0;
   for (const s of emailSpans(noScheme)) {
+    // A path tail can swallow later addresses ("a@b.ro/a@b.ro/..." has no whitespace); skip anything already covered,
+    // otherwise ranges overlap and the blanked output grows quadratically.
+    if (s.index < lastEnd) continue;
     // "user@host/path" with no scheme is really a link with userinfo; a plain address is just blanked out.
     const next = noScheme[s.end];
     let end = s.end;
@@ -133,6 +168,7 @@ export function extractUrls(raw: string): string[] {
       found.push({ index: s.index, url: noScheme.slice(s.index, end) });
     }
     ranges.push([s.index, end]);
+    lastEnd = end;
   }
   const rest = blankRanges(noScheme, ranges);
   for (const m of rest.matchAll(URL_RE)) if (looksLikeUrl(m[0])) found.push({ index: m.index ?? 0, url: m[0] });

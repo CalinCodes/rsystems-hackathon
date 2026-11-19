@@ -31,6 +31,11 @@ const CASES: Record<string, string> = {
   'many addresses': 'a@b.ro/ '.repeat(N / 8),
   'at signs': '@'.repeat(N),
   'address chars, many at': 'a@'.repeat(N / 2) + 'b',
+  'at then dashes': '@' + '-'.repeat(N) + 'a',
+  'at then dots': '@' + '.'.repeat(N) + 'a',
+  'addresses with paths, no spaces': 'a@b.ro/'.repeat(N / 7),
+  'address junk': 'a@b.ro@'.repeat(N / 7),
+  'amount-like noise': '.5 1'.repeat(N / 4),
   'payment verbs and digits': 'platiti 1 '.repeat(N / 10),
 };
 
