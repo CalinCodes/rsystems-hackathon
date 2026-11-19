@@ -72,7 +72,7 @@ describe('suspicious contact', () => {
   });
   it('flags disguised authorities even with no organisation claimed', () => {
     expect(flags(['Intrați https://bancadunarea.ro@evil.com/x'])).toContain('RF_SUSPICIOUS_CONTACT');
-    expect(flags(['Intrați https://bancadunarea.ro\@evil.com/x'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Intrați https://bancadunarea.ro\\@evil.com/x'])).toContain('RF_SUSPICIOUS_CONTACT');
   });
   it('treats a trailing-dot host as the same host', () => {
     expect(flags(['Banca Dunărea: https://bancadunarea.ro./cont'])).toEqual([]);
@@ -91,4 +91,22 @@ it('reader messages never raise flags', () => {
   const s = sc(['ok']);
   s.messages.push({ n: 2, from: 'reader', text: 'Îți transfer 500 lei acum' });
   expect(runRules(s)).toEqual([]);
+});
+
+describe('evasion resistance', () => {
+  it('a denial in another clause does not silence a real request', () => {
+    expect(flags(['Banca nu vă cere niciodată nimic, dar spuneți-mi codul primit'])).toContain('RF_CODE_REQUEST');
+    expect(flags(['Nu vă vom cere niciodată datele cardului. Spuneți-mi acum CVV-ul'])).toContain('RF_DATA_REQUEST');
+  });
+  it('a number in the request does not turn it into code delivery', () => {
+    expect(flags(['Spuneți-mi codul 123456 primit pe SMS'])).toContain('RF_CODE_REQUEST');
+  });
+  it('catches schemeless user@host/path links', () => {
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro@evil.xyz/login'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Intrați pe bancadunarea.ro@evil.xyz/login'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('flags risky email domains even with no organisation claimed', () => {
+    expect(flags(['Scrieți la premii@promo.xyz'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Scrieți la ion@gmail.com'])).toEqual([]);
+  });
 });

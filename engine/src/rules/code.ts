@@ -1,4 +1,3 @@
-import { extractCodes } from '../normalize';
 import { GAP, NOT, perSenderMessage, firstHit, type Rule } from './util';
 
 const NOUN = String.raw`(?:cod(?:ul|uri|urile)?|otp|token|parola unica)`;
@@ -12,8 +11,5 @@ const RE = new RegExp(
   'g',
 );
 
-/** A sentence that itself contains the code is the sender *delivering* one, not asking for one. */
-const deliversCode = (sentence: string): boolean => extractCodes(sentence).length > 0;
-
 export const codeRequest: Rule = (c) =>
-  perSenderMessage(c, (m) => firstHit('RF_CODE_REQUEST', m, RE, deliversCode));
+  perSenderMessage(c, (m) => firstHit('RF_CODE_REQUEST', m, RE));

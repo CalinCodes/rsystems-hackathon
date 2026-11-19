@@ -57,12 +57,12 @@ function messageHits(m: MsgCtx, claimed: Org[]): Hit[] {
     else if (claimed.length > 0 && !official) flag(url);
     else if (claimed.length === 0 && RISKY_TLD.test(host)) flag(url);
   }
-  if (claimed.length === 0) return out;
-
   for (const email of extractEmails(m.raw)) {
     const domain = email.toLowerCase().split('@')[1] ?? '';
-    if (!claimed.some((o) => isOfficialHost(domain, o.site))) flag(email);
+    if (claimed.length > 0 ? !claimed.some((o) => isOfficialHost(domain, o.site)) : SHORTENERS.test(domain) || RISKY_TLD.test(domain)) flag(email);
   }
+  if (claimed.length === 0) return out;
+
   for (const phone of extractPhones(m.raw)) {
     if (!claimed.some((o) => o.phones.includes(phone))) flag(phone);
   }

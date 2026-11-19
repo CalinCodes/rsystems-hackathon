@@ -30,18 +30,22 @@ export const NOT = String.raw`(?<!\bnu (?:(?:il|o|le|va|ne|mi|vi|ti|sa) )*)`;
 /** Words between a verb and its object, never crossing a sentence end ("2.500" keeps its dot). */
 export const GAP = String.raw`(?:[^.!?;\n]|\.(?=\d)){0,60}`;
 
-/** Whole-sentence denials: "banca nu vă cere niciodată codul". */
-const DENY = /\b(?:niciodata|nu (?:(?:va|ne|vom|il|o|le) )*(?:cere\w*|cerem|solicit\w*|comunic\w*|divulg\w*|dezvalu\w*|furniz\w*|instal\w*))\b/;
+/**
+ * A denial only counts inside the SAME clause as the match (clauses split on . ! ? ; newline and comma).
+ * WHY: a scammer can append "nu va cerem niciodata nimic" elsewhere in the text to try to silence a real request.
+ */
+const DENY = /\bnu (?:(?:va|ne|vom|il|o|le) )*(?:cere\w*|cerem|solicit\w*|comunic\w*|divulg\w*|dezvalu\w*|furniz\w*|instal\w*)\b/;
 
-export function sentenceAt(norm: string, index: number): string {
-  const start = Math.max(norm.lastIndexOf('.', index - 1), norm.lastIndexOf('!', index - 1), norm.lastIndexOf('?', index - 1), norm.lastIndexOf('\n', index - 1)) + 1;
+export function clauseAt(norm: string, index: number): string {
+  const before = norm.slice(0, index);
+  const start = Math.max(before.search(/[.!?;,\n][^.!?;,\n]*$/) + 1, 0);
   const rest = norm.slice(index);
-  const end = rest.search(/[!?\n]|\.(?!\d)/);
+  const end = rest.search(/[!?;,\n]|\.(?!\d)/);
   return norm.slice(start, end === -1 ? norm.length : index + end);
 }
 
 export function isDenied(norm: string, index: number): boolean {
-  return DENY.test(sentenceAt(norm, index));
+  return DENY.test(clauseAt(norm, index));
 }
 
 export function makeHit(flag: FlagCode, m: MsgCtx, index: number, length: number): Hit {
@@ -50,11 +54,10 @@ export function makeHit(flag: FlagCode, m: MsgCtx, index: number, length: number
 }
 
 /** First non-denied match of `re` (must be global) in the message, or null. */
-export function firstHit(flag: FlagCode, m: MsgCtx, re: RegExp, skip?: (sentence: string) => boolean): Hit | null {
+export function firstHit(flag: FlagCode, m: MsgCtx, re: RegExp): Hit | null {
   for (const match of m.norm.matchAll(re)) {
     const idx = match.index ?? 0;
     if (isDenied(m.norm, idx)) continue;
-    if (skip?.(sentenceAt(m.norm, idx))) continue;
     return makeHit(flag, m, idx, match[0].length);
   }
   return null;

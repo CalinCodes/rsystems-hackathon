@@ -34,6 +34,9 @@ export function extractEmails(text: string): string[] {
 
 const SCHEME_URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>"']+/gi;
 
+// "user@host/path" without a scheme: an email followed by a path is really a link with userinfo.
+const EMAIL_PATH_RE = new RegExp(String.raw`${EMAIL_RE.source}[/?#][^\s<>"']*`, 'gi');
+
 const blank = (text: string, re: RegExp): string => text.replace(re, (m) => ' '.repeat(m.length));
 
 /**
@@ -44,7 +47,9 @@ const blank = (text: string, re: RegExp): string => text.replace(re, (m) => ' '.
 export function extractUrls(text: string): string[] {
   const found: { index: number; url: string }[] = [];
   for (const m of text.matchAll(SCHEME_URL_RE)) found.push({ index: m.index ?? 0, url: m[0] });
-  const rest = blank(blank(text, SCHEME_URL_RE), EMAIL_RE);
+  const noScheme = blank(text, SCHEME_URL_RE);
+  for (const m of noScheme.matchAll(EMAIL_PATH_RE)) found.push({ index: m.index ?? 0, url: m[0] });
+  const rest = blank(blank(noScheme, EMAIL_PATH_RE), EMAIL_RE);
   for (const m of rest.matchAll(URL_RE)) found.push({ index: m.index ?? 0, url: m[0] });
   return found.sort((a, b) => a.index - b.index).map((f) => trimTrailing(f.url));
 }
