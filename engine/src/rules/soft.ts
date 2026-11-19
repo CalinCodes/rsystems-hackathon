@@ -13,7 +13,7 @@ const URGENCY = re([
   String.raw`\bintr-?o (?:ora|jumatate de ora)\b|\bintr-?un (?:sfert de ora|minut)\b`,
   // "24h", "24 h", "in 24 de ore", "peste 2 ore", "doar 30 min"
   String.raw`\b\d{1,3}\s?h\b`,
-  String.raw`\b(?:in|peste|timp de|doar|maxim|sub)\s+(?:\d+|o|un|doua|trei|cinci|zece)\s*(?:de\s+)?(?:h|ore|ora|min|minute|minut)\b`,
+  String.raw`\b(?:in|peste|timp de|doar|maxim|sub)\s+(?:\d+|o|un|doua|trei|cinci|zece)\s*(?:de\s+)?(?:h|ore|ora|min|minute|minut|secunde|sec)\b`,
   // deadlines: "pana la 15.03", "pana pe 3 mai", "pana maine", "pana vineri", "pana la ora 18"
   String.raw`\bpana\s+(?:la\s+|pe\s+)?(?:azi|astazi|maine|diseara|dimineata|\d{1,2}\s?[./-]\s?\d{1,2}(?:\s?[./-]\s?\d{2,4})?|(?:\d{1,2}\s+)?(?:ian|feb|mar|apr|mai|iun|iul|aug|sep|oct|nov|dec)\w*|ora\s+\d{1,2}|luni|marti|miercuri|joi|vineri|sambata|duminica)`,
   String.raw`\bultima (?:sansa|zi|ocazie)\b`,
@@ -41,6 +41,11 @@ const TOO_GOOD = re([
   String.raw`\bmostenire\b`,
   String.raw`\bdublam\b|\bsuma dublata\b`,
   String.raw`\blucr\w+ de acasa\b`,
+  String.raw`\b(?:job\w*|munca)\b[^.!?\n]{0,25}\bde acasa\b`,
+  // "200-400 lei/zi" offered as pay
+  String.raw`\b(?:oferim|castig\w*|venit\w*|salariu|primesti|primiti)\b[^.!?\n]{0,40}\d[\d.,\s-]*(?:lei|ron|euro?|€)\s*\/\s*(?:zi|ora)\b`,
+  // overpaying buyer: "iti dau 100 lei in plus", "platesc dublu"
+  String.raw`\b\d+\s*(?:lei|ron|euro?|€)\s+(?:in plus|peste pret)\b|\bplatesc (?:dublu|mai mult)\b`,
   // Easy money per day/hour ("primiti 150 lei pe zi"). Needs an earn verb: "parcarea costa 10 lei pe ora" is a price.
   String.raw`\b(?:primiti|primesti|castigati|castigi|incasati|incasezi|faceti|faci)\b[^.!?;\n]{0,25}\d[\d.,]*\s*(?:lei|ron|euro?|€)\s+pe\s+(?:zi|ora|saptamana)\b`,
   String.raw`\bvesti (?:bune|minunate|excelente)\b`,
@@ -59,6 +64,8 @@ const THREAT = re([
   String.raw`\bamend\w*`,
   String.raw`\bexecutare silita\b|\bpoprire\w*`,
   String.raw`\bdosar penal\b|\bcercetat\w*|\barest\w*`,
+  String.raw`\binchisoare\b|\bpuscarie\b|\bspalare de bani\b`,
+  String.raw`\bblocheaz\w*\b[^!?;\n]{0,15}\b(?:cont\w*|card\w*)`,
   // Loss-aversion is not a threat: "ca sa nu pierdeti ocazia" -> NOT skips a verb preceded by "nu".
   String.raw`${NOT}\b(?:veti pierde|vei pierde|pierdeti|pierzi)\b`,
   String.raw`\bactiune in (?:instanta|justitie)\b|\bdat in judecata\b`,
@@ -78,12 +85,17 @@ const EMOTIONAL = re([
   String.raw`\bam avut un accident\b`,
   String.raw`\bsunt la spital\b`,
   String.raw`\bsingura (?:speranta|persoana)\b`,
+  String.raw`\bmi-?e (?:rusine|frica|teama)\b|\bsunt (?:speriat|panicat)\w*`,
+  String.raw`\bdoar tu (?:ma )?(?:poti|puteti) ajuta\b`,
   String.raw`\bte iubesc\b|\biubirea mea\b|\bsufletul meu\b|\bdragostea mea\b`,
 ]);
 
 const CHANNEL_SWITCH = re([
   String.raw`\b(?:scrie-?mi|scrieti-?mi|contacteaza-?ma|continuam|vorbim|ne auzim|hai)\b[^!?;\n]{0,25}\b(?:pe|la|prin|in)\s+(?:whatsapp|telegram|signal|viber|messenger|privat)\b`,
   String.raw`\badauga-?ma pe (?:whatsapp|telegram|signal)\b`,
+  // "va adaug intr-un grup pe Telegram", "hai pe tg"
+  String.raw`\b(?:va|te) (?:adaug|adaugam|invit|invitam)\b[^!?;\n]{0,30}\b(?:whatsapp|telegram|signal|viber)\b`,
+  String.raw`\b(?:hai|vorbim|scrie-?mi)\s+pe\s+(?:tg|wa|wapp)\b`,
   String.raw`\bwa\.me\b|\bt\.me\b`,
   String.raw`\bnumarul meu de (?:whatsapp|telegram)\b`,
 ]);
@@ -97,6 +109,7 @@ const SECRECY = re([
   String.raw`\b(?:past|ascund)\w*\b[^!?;\n]{0,15}\bsecret\w*`,
   String.raw`\b(?:strict )?(?:secret|confidential)\b`,
   String.raw`\bnu (?:vorbi|vorbiti) cu nimeni\b`,
+  String.raw`\bnu (?:aveti|ai) voie sa (?:spune|vorbi|povesti|anunta|merge|suna)\w*`,
   String.raw`\bnu (?:sunati|apelati|contactati) (?:la )?(?:banca|politia)\b`,
 ]);
 

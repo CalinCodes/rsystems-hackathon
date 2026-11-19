@@ -34,8 +34,12 @@ precision is ≥ 0.9**, and it is never below 0.5.
 
 | Set | SAFE rows with a false flag | Flagged rows caught |
 |---|---|---|
-| p90 (`thresholds.json`) | 1.2% | 71.8% |
-| p80 (`thresholds.p80.json`) | 7.0% | 82.1% |
+| p90 (`thresholds.json`) | 1.1% | 56.1% |
+| p80 (`thresholds.p80.json`) | 5.0% | 75.3% |
+
+`RF_PAYMENT_REQUEST` is set to rules only in both sets (`RULES_ONLY` in `train.py`). On the hand-written threads and on
+a blind stress set, the model fired "payment" on investment and job pitches that asked for nothing. That moved the
+first alert too early or turned SUSPICIOUS into SCAM. The payment rules already catch real asks.
 
 `thresholds.json` lives outside `weights.json` because the `Weights` type in `contracts/`
 is frozen, and `loadWeights()` would drop any extra field.

@@ -15,7 +15,11 @@ const ANNOUNCE = String.raw`(?:va\s+)?(?:informeaza|anunta|contacteaza|notifica|
 
 const GENERIC_RE = new RegExp(
   [
-    String.raw`\b(?:sunt|suntem|ma numesc|va (?:suna|contacteaza|scrie|apelez|contactez)|va apelam)\b[^!?;\n]{0,50}\b(?:de la|din partea|reprezentant\w*|lucrez la|lucrez pentru)\s+(?:de\s+)?${GENERIC_ORG}\b`,
+    String.raw`\b(?:sunt|suntem|ma numesc|va (?:suna|sun|sunam|contacteaza|scrie|scriu|scriem|apelez|contactez)|te sun|va apelam)\b[^!?;\n]{0,50}\b(?:de la|din partea|reprezentant\w*|lucrez la|lucrez pentru)\s+(?:de\s+)?${GENERIC_ORG}\b`,
+    // English-mixed support calls: "I am calling from Microsoft technical support"
+    String.raw`\b(?:calling from|this is|we are from|i am from)\b[^!?;\n]{0,25}\b(?:microsoft|windows|apple|google|bank|support)\b|\b(?:technical|tech|customer) support\b`,
+    // "loteria noastra", "tombola noastra": speaking as the organiser
+    String.raw`\b(?:loteria|tombola|concursul|campania)\s+noastr\w*`,
     String.raw`\b(?:din partea|in numele|din numele)\s+(?:de\s+)?${GENERIC_ORG}\b`,
     // First-person role claims only. "nici angajatilor bancii" is a warning ABOUT bank staff, not a claim to be one.
     String.raw`\b(?:sunt|suntem)\b[^!?;\n]{0,25}\b(?:agent|ofiter|procuror|inspector|consilier|reprezentant|angajat|operator|colonel|comisar|specialist|tehnician|inginer)\b[^!?;\n]{0,30}\b${GENERIC_ORG}\b`,

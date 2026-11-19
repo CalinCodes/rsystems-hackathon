@@ -42,6 +42,10 @@ MIN_PRECISION = 0.9
 # A missed scam costs the team about twice what a false alarm does (brief scoring),
 # so a looser cut set is exported too; the engine's validation eval picks one.
 LOOSE_PRECISION = 0.8
+# Flags left to rules even when CV precision passes. RF_PAYMENT_REQUEST: on hand-written and blind stress threads the
+# model fired on investment/job pitches with no request in them (moving first_alert too early, SUSPICIOUS -> SCAM),
+# while the payment rules (verbs + amounts) already cover real asks.
+RULES_ONLY = {"RF_PAYMENT_REQUEST"}
 # Cuts below 0.5 are never offered: they would fire on coin-flip outputs.
 CUT_GRID = [round(0.5 + 0.01 * i, 2) for i in range(50)]
 
@@ -218,6 +222,9 @@ def main() -> None:
         oof[flag] = oof_proba(X, y, folds)
         cuts[flag] = {**pick_threshold(y, oof[flag]), "templates": n_tpl}
         loose[flag] = {**pick_threshold(y, oof[flag], LOOSE_PRECISION), "templates": n_tpl}
+        if flag in RULES_ONLY:
+            cuts[flag]["threshold"] = None
+            loose[flag]["threshold"] = None
         c, lc = cuts[flag], loose[flag]
         # SAFE rows this flag alone would wrongly fire on: shows where SAFE templates are thin.
         fa = int((oof[flag][safe] >= c["threshold"]).sum()) if c["threshold"] is not None else 0

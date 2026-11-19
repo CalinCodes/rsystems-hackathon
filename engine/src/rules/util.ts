@@ -33,7 +33,8 @@ export function buildCtx(s: Scenario): RuleCtx {
  * Lookbehind that skips verbs already negated ("nu îl comunicați", "nu trimiteți").
  * WHY: genuine bank texts warn about exactly the things scammers ask for.
  */
-export const NOT = String.raw`(?<!\bnu (?:(?:il|o|le|va|ne|mi|vi|ti|sa) )*)`;
+// "nu trebuie sa platiti nimic", "nu e nevoie sa trimiteti codul" are reassurances, not requests.
+export const NOT = String.raw`(?<!\bnu (?:(?:il|o|le|va|ne|mi|vi|ti|sa|trebuie|e|este|nevoie|mai|cerem|cer) )*)`;
 
 /** Words between a verb and its object, never crossing a sentence end ("2.500" keeps its dot). */
 export const GAP = String.raw`(?:[^.!?;\n]|\.(?=\d)){0,60}`;
