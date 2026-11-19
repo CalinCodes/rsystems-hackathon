@@ -20,7 +20,7 @@ export interface Amount {
 
 const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/gi;
 const URL_RE =
-  /\b(?:https?:\/\/|www\.)[^\s<>"']+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:ro|com|net|org|eu|info|xyz|top|click|link|app|online|site)\b(?:\/[^\s<>"']*)?/gi;
+  /\b(?:https?:\/\/|www\.)[^\s<>"']+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:ro|com|net|org|eu|info|xyz|top|click|link|app|online|site|shop|store|live|icu|vip|club|biz|cc|me|co|io|ly|gy|gd|gl|example)\b(?:\/[^\s<>"']*)?/gi;
 // Romanian numbers: +40 / 0040 / 0 prefix then 9 digits, with optional space/dot/dash separators.
 const PHONE_RE = /(?<![\d+])(?:\+40|0040|0)[\s.-]?\d(?:[\s.-]?\d){8}(?!\d)/g;
 const AMOUNT_RE = /(?<![\d.,])(\d{1,3}(?:[.\s]\d{3})+|\d+)(?:,(\d{1,2}))?\s*(lei|ron|eur|euro|usd|€|\$)(?![a-z])/gi;
@@ -32,10 +32,21 @@ export function extractEmails(text: string): string[] {
   return text.match(EMAIL_RE) ?? [];
 }
 
+const SCHEME_URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>"']+/gi;
+
+const blank = (text: string, re: RegExp): string => text.replace(re, (m) => ' '.repeat(m.length));
+
+/**
+ * Scheme-prefixed URLs are taken BEFORE emails are blanked: "https://bancadunarea.ro@evil.xyz/x"
+ * contains an email-looking span, and blanking it first would hide the whole link.
+ * Length-preserving blanking keeps match indexes so results stay in reading order.
+ */
 export function extractUrls(text: string): string[] {
-  // Blank out emails first, otherwise "x@bancadunarea.ro" would also read as a link.
-  const noEmails = text.replace(EMAIL_RE, ' ');
-  return (noEmails.match(URL_RE) ?? []).map(trimTrailing);
+  const found: { index: number; url: string }[] = [];
+  for (const m of text.matchAll(SCHEME_URL_RE)) found.push({ index: m.index ?? 0, url: m[0] });
+  const rest = blank(blank(text, SCHEME_URL_RE), EMAIL_RE);
+  for (const m of rest.matchAll(URL_RE)) found.push({ index: m.index ?? 0, url: m[0] });
+  return found.sort((a, b) => a.index - b.index).map((f) => trimTrailing(f.url));
 }
 
 /** Returns numbers in national form (07xxxxxxxx) so the same number compares equal however it was typed. */

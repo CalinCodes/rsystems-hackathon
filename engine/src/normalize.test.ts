@@ -43,3 +43,7 @@ it('finds OTP-like codes but not phones or amounts', () => {
   expect(extractCodes('Codul este 483920. Sunați 0800 100 200, plătiți 2.500 lei')).toEqual(['483920']);
   expect(extractCodes('fără cod')).toEqual([]);
 });
+
+it('does not let an email-looking userinfo hide a link', () => {
+  expect(extractUrls('Intrați: https://bancadunarea.ro@evil.xyz/login')).toEqual(['https://bancadunarea.ro@evil.xyz/login']);
+});
