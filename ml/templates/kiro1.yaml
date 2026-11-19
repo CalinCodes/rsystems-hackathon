@@ -1,6 +1,106 @@
+# Kiro 1 templates: bank, courier, authority, tech support, account takeover, marketplace.
+# Each scam type has SCAM variants and a SAFE look-alike (type: NONE, flags: []) so the
+# classifier learns the boundary, not just the topic. Fictional values only.
+# flags must be valid FlagCode values from contracts/types.ts.
+
+# --- BANK_IMPERSONATION ---
 - type: BANK_IMPERSONATION
   flags: [RF_IMPERSONATION, RF_THREAT, RF_URGENCY, RF_SUSPICIOUS_CONTACT]
   text: "{bank}: Cardul dvs. a fost blocat. Pentru deblocare accesați în {deadline}: {fake_link}"
+- type: BANK_IMPERSONATION
+  flags: [RF_IMPERSONATION, RF_CODE_REQUEST, RF_URGENCY]
+  text: "{bank}: Am detectat o plată suspectă. Confirmați identitatea trimițând codul {code} primit prin SMS."
+- type: BANK_IMPERSONATION
+  flags: [RF_IMPERSONATION, RF_DATA_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "{bank}: Pentru a reactiva contul, completați datele cardului și CNP-ul la {fake_link}"
+- type: BANK_IMPERSONATION
+  flags: [RF_IMPERSONATION, RF_PAYMENT_REQUEST, RF_THREAT, RF_URGENCY]
+  text: "{bank}: Cont restricționat. Transferați {amount} într-un cont sigur în {deadline} sau pierdeți fondurile."
+# SAFE look-alike: a real bank notice that never asks for anything.
 - type: NONE
   flags: []
   text: "{bank}: Codul de confirmare este {code}. Nu îl comunicați nimănui."
+- type: NONE
+  flags: []
+  text: "{bank}: Plata de {amount} către {shop} a fost autorizată. Verificați în aplicație."
+
+# --- COURIER_FEE ---
+- type: COURIER_FEE
+  flags: [RF_IMPERSONATION, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "{courier}: Coletul dvs. nu poate fi livrat. Plătiți taxa de {amount} aici: {fake_link}"
+- type: COURIER_FEE
+  flags: [RF_IMPERSONATION, RF_PAYMENT_REQUEST, RF_URGENCY, RF_SUSPICIOUS_CONTACT]
+  text: "{courier}: Colet în așteptare. Achitați taxa vamală de {amount} în {deadline}: {fake_link}"
+- type: COURIER_FEE
+  flags: [RF_IMPERSONATION, RF_DATA_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "{courier}: Adresă incompletă. Reconfirmați datele și cardul pentru livrare: {fake_link}"
+# SAFE look-alike: a genuine delivery notice with no fee and the official domain.
+- type: NONE
+  flags: []
+  text: "{courier}: Coletul dvs. va fi livrat astăzi între orele 14 și 18. Urmăriți pe {official_link}"
+- type: NONE
+  flags: []
+  text: "{courier}: Coletul a fost livrat. Vă mulțumim că ați ales {courier}."
+
+# --- AUTHORITY_IMPERSONATION ---
+- type: AUTHORITY_IMPERSONATION
+  flags: [RF_IMPERSONATION, RF_THREAT, RF_PAYMENT_REQUEST, RF_URGENCY]
+  text: "{authority}: Aveți o amendă neplătită. Achitați {amount} în {deadline} sau se deschide dosar penal: {fake_link}"
+- type: AUTHORITY_IMPERSONATION
+  flags: [RF_IMPERSONATION, RF_DATA_REQUEST, RF_THREAT]
+  text: "{authority}: Dosar fiscal în verificare. Transmiteți CNP-ul și datele contului pentru clarificare."
+- type: AUTHORITY_IMPERSONATION
+  flags: [RF_IMPERSONATION, RF_PAYMENT_REQUEST, RF_SECRECY, RF_URGENCY]
+  text: "{authority}: Sunteți cercetat într-un caz confidențial. Depuneți {amount} garanție și nu discutați cu nimeni."
+# SAFE look-alike: a real public-institution reminder pointing to the official site.
+- type: NONE
+  flags: []
+  text: "{authority}: Reamintim că declarația se depune online pe {official_link}. Nu răspundeți la acest mesaj."
+
+# --- TECH_SUPPORT ---
+- type: TECH_SUPPORT
+  flags: [RF_IMPERSONATION, RF_REMOTE_ACCESS, RF_URGENCY]
+  text: "{telco}: Am detectat un virus pe dispozitivul dvs. Instalați {remote_tool} ca să vă reparăm acum."
+- type: TECH_SUPPORT
+  flags: [RF_IMPERSONATION, RF_REMOTE_ACCESS, RF_CODE_REQUEST]
+  text: "Suport tehnic: Pentru a remedia problema, deschideți {remote_tool} și dictați codul de conectare afișat."
+- type: TECH_SUPPORT
+  flags: [RF_IMPERSONATION, RF_REMOTE_ACCESS, RF_PAYMENT_REQUEST, RF_URGENCY]
+  text: "{telco}: Licența de securitate a expirat. Plătiți {amount} și acordați acces prin {remote_tool} în {deadline}."
+# SAFE look-alike: a legit support reply that never asks for remote access.
+- type: NONE
+  flags: []
+  text: "{telco}: Sesizarea dvs. a fost înregistrată. Un tehnician vă contactează în 48 de ore. Nu cerem niciodată parole."
+
+# --- ACCOUNT_TAKEOVER ---
+- type: ACCOUNT_TAKEOVER
+  flags: [RF_IMPERSONATION, RF_CODE_REQUEST, RF_URGENCY]
+  text: "{shop}: Cineva a încercat să vă acceseze contul. Trimiteți-ne codul {code} pentru a-l securiza."
+- type: ACCOUNT_TAKEOVER
+  flags: [RF_IMPERSONATION, RF_DATA_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "{shop}: Autentificare nouă detectată. Confirmați parola și emailul la {fake_link} ca să blocați accesul."
+- type: ACCOUNT_TAKEOVER
+  flags: [RF_CODE_REQUEST, RF_CHANNEL_SWITCH, RF_URGENCY]
+  text: "Continuăm pe WhatsApp. Ca să recuperez contul ne trebuie codul de 6 cifre care tocmai v-a sosit: {code}"
+# SAFE look-alike: a real security alert that tells you NOT to share the code.
+- type: NONE
+  flags: []
+  text: "{shop}: Autentificare nouă pe contul dvs. Dacă nu ați fost dumneavoastră, schimbați parola pe {official_link}."
+
+# --- MARKETPLACE ---
+- type: MARKETPLACE
+  flags: [RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT, RF_CHANNEL_SWITCH]
+  text: "Sunt interesat de {item}. Plătesc prin linkul de livrare al platformei, confirmați cardul aici: {fake_link}"
+- type: MARKETPLACE
+  flags: [RF_PAYMENT_REQUEST, RF_TOO_GOOD, RF_URGENCY]
+  text: "Cumpăr {item} acum, plătesc dublu. Trimiteți datele cardului ca să vă fac transferul în {deadline}."
+- type: MARKETPLACE
+  flags: [RF_CHANNEL_SWITCH, RF_DATA_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "Vorbim pe WhatsApp? Curierul platformei cere codul cardului și CNP-ul la {fake_link} ca să ridice {item}."
+# SAFE look-alike: a normal buyer conversation with no payment or link.
+- type: NONE
+  flags: []
+  text: "Bună ziua, mai este disponibilă {item}? Aș putea veni să o văd mâine? Mulțumesc, {first_name}."
+- type: NONE
+  flags: []
+  text: "Perfect, ne vedem mâine la 10 pentru {item}. Plătesc cash la fața locului."
