@@ -56,6 +56,16 @@ one IP. HTTP 429 means that allowance is used up: switch to the phone's hotspot 
 options page shows the result of the last attempt. If ntfy.sh is unreachable, the reader still gets the
 normal warning. With Wi-Fi off there is no family alert (the detector itself keeps working offline).
 
+## Typing guard
+
+In a chat the engine judged SUSPICIOUS or SCAM, the extension also watches what the **reader** is about to send.
+If the draft holds an SMS/app code (4-8 digits), a card number (Luhn-checked), a CNP (control digit checked) or a
+remote-control app name with its id ("AnyDesk 123 456 789"), Enter and the send button are stopped and a note
+explains why, with the chat's official-channel action. **Nu trimit** is the focused default; **Trimit oricum**
+sends that exact draft, because it is the reader's decision. Amounts ("1850 lei"), hours ("12:30") and phone
+numbers are not stopped, and SAFE chats are never guarded. The draft is read in memory only: never stored,
+logged or sent.
+
 ## How it works
 
 | File | Job |
@@ -67,6 +77,7 @@ normal warning. With Wi-Fi off there is no family alert (the detector itself kee
 | `src/background.ts` | Service worker. Runs `analyze()` with `ml/out/weights.json`, then sets the badge and sends the notification. |
 | `src/embedCache.ts` | Embeds only new messages, keyed by a hash rather than the text. After a failed Ollama call it pauses the model for 60 s. |
 | `src/pager.ts`, `src/pagerStore.ts`, `src/options.ts` | Family alert: payload (no message text), local-network check, once per chat on SCAM, options page. |
+| `src/guard.ts`, `src/guardView.ts` | Typing guard: finds a code, card, CNP or remote-access id in the reader's draft (pure, tested) and stops the send in risky chats. |
 | `src/view.ts` | Draws the banner (inline styles, system font, 18 px+) and outlines the first-alert bubble. |
 
 ## Privacy

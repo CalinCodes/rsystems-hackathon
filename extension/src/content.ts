@@ -1,6 +1,7 @@
 import type { Result } from '@ss/contracts';
 import { bannerModel } from './banner';
 import { readChat, type ElLike } from './dom';
+import { installGuard, type GuardState } from './guardView';
 import { threadKey, toScenario } from './thread';
 import { renderBanner, markFirstAlert } from './view';
 
@@ -12,9 +13,13 @@ const RETRY_MS = 3_000;
 let lastThread = '';
 let dismissed = '';
 let timer: ReturnType<typeof setTimeout> | undefined;
+/** Latest verdict per open chat, for the typing guard. Keyed by chat so a stale verdict never guards another chat. */
+let guard: (GuardState & { chat: string }) | null = null;
+
+const readDoc = (): ReturnType<typeof readChat> => readChat(document as unknown as Parameters<typeof readChat>[0]);
 
 async function check(): Promise<void> {
-  const chat = readChat(document as unknown as Parameters<typeof readChat>[0]);
+  const chat = readDoc();
   if (chat === null || chat.messages.length === 0) return renderBanner(null, () => undefined);
   const thread = threadKey(chat.title, chat.messages);
   if (thread === lastThread) return;
@@ -35,6 +40,7 @@ async function check(): Promise<void> {
     return;
   }
   if (thread !== lastThread) return; // a newer read superseded this one
+  guard = { chat: chatKey, verdict: r.verdict, action: r.warning.action };
   const model = bannerModel(r, scenario);
   const key = `${chatKey}:${r.verdict}`;
   renderBanner(dismissed === key ? null : model, () => {
@@ -45,6 +51,11 @@ async function check(): Promise<void> {
   const bubble: ElLike | undefined = r.firstAlert === null ? undefined : chat.bubbles[offset + r.firstAlert - 1];
   markFirstAlert(model === null || model.tone === 'info' ? undefined : (bubble as unknown as HTMLElement | undefined));
 }
+
+installGuard(() => {
+  const chat = readDoc();
+  return chat !== null && guard !== null && threadKey(chat.title, []) === guard.chat ? guard : null;
+});
 
 new MutationObserver(() => {
   clearTimeout(timer);
