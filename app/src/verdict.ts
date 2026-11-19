@@ -3,6 +3,8 @@ import type { Verdict } from '@ss/contracts';
 export interface VerdictLook {
   icon: string;
   word: string;
+  /** One word for tables and counters, where the full brief text does not fit. */
+  short: string;
   /** Tailwind classes for the border + accent text of this verdict. */
   cls: string;
 }
@@ -10,13 +12,14 @@ export interface VerdictLook {
 // Texts are the brief's exact wording. Icons double the colour so the verdict
 // reads without relying on colour alone (accessibility for elderly / colour-blind users).
 export const VERDICT_LOOK: Record<Verdict, VerdictLook> = {
-  SAFE: { icon: '✓', word: 'Pare în regulă', cls: 'text-safe border-safe' },
+  SAFE: { icon: '✓', word: 'Pare în regulă', short: 'Sigur', cls: 'text-safe border-safe' },
   SUSPICIOUS: {
+    short: 'Suspect',
     icon: '⚠',
     word: 'Atenție, verificați înainte să răspundeți',
     cls: 'text-suspicious border-suspicious',
   },
-  SCAM: { icon: '⛔', word: 'Pare o țeapă! Nu răspundeți', cls: 'text-scam border-scam' },
+  SCAM: { icon: '⛔', word: 'Pare o țeapă! Nu răspundeți', short: 'Țeapă', cls: 'text-scam border-scam' },
 };
 
 /** Romanian display name for each scam type, for the plain-language summary line. */
