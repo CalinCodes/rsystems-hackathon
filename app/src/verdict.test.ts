@@ -5,7 +5,7 @@ describe('verdict presentation', () => {
   it('has a distinct icon and Romanian word for every verdict', () => {
     const words = Object.values(VERDICT_LOOK).map((v) => v.word);
     expect(new Set(words).size).toBe(words.length);
-    expect(VERDICT_LOOK.SCAM.word).toBe('Înșelătorie');
+    expect(VERDICT_LOOK.SCAM.word).toBe('Pare o țeapă! Nu răspundeți');
   });
 
   it('translates known scam types and falls back to the raw code', () => {
