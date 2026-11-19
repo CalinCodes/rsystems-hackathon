@@ -69,7 +69,8 @@ function messageHits(m: MsgCtx, claimed: Org[]): Hit[] {
   }
   for (const email of extractEmails(m.raw)) {
     const domain = email.toLowerCase().split('@')[1] ?? '';
-    if (claimed.length > 0 ? !claimed.some((o) => isOfficialHost(domain, o.site)) : SHORTENERS.test(domain) || RISKY_TLD.test(domain)) flag(email);
+    const foreign = claimed.length > 0 ? !claimed.some((o) => isOfficialHost(domain, o.site)) : SHORTENERS.test(domain) || RISKY_TLD.test(domain);
+    if (foreign || hasExoticHost(domain, hostOf(domain))) flag(email);
   }
   if (claimed.length === 0) return out;
 

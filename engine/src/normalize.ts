@@ -33,7 +33,9 @@ export interface Amount {
   raw: string;
 }
 
-const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/gi;
+// Unicode-aware like URL_RE: an ASCII-only pattern would skip "user@bаncadunarea.ro" (Cyrillic а) entirely, and
+// URL_RE refuses to start a host right after "@", so neither extractor would see it.
+const EMAIL_RE = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*\.\p{L}{2,}/giu;
 /**
  * Bare hosts are matched as the WHOLE dotted token, ending only at a real boundary. A TLD allowlist inside the regex
  * would stop at "bancadunarea.ro" in "bancadunarea.ro.evil.zzz" and report an official-looking host.
@@ -66,7 +68,7 @@ export function extractEmails(text: string): string[] {
 const SCHEME_URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>"']+/gi;
 
 // "user@host/path" without a scheme: an email followed by a path is really a link with userinfo.
-const EMAIL_PATH_RE = new RegExp(String.raw`${EMAIL_RE.source}[/?#][^\s<>"']*`, 'gi');
+const EMAIL_PATH_RE = new RegExp(String.raw`${EMAIL_RE.source}[/?#][^\s<>"']*`, 'giu');
 
 const blank = (text: string, re: RegExp): string => text.replace(re, (m) => ' '.repeat(m.length));
 

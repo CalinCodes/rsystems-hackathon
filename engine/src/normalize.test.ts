@@ -60,3 +60,7 @@ it('canonicalize folds dots, invisibles and fullwidth forms but keeps Romanian l
   expect(canonicalize('ăâîșț')).toBe('ăâîșț');
   expect(canonicalize('ă')).toBe('ă');
 });
+
+it('extracts non-ASCII email addresses whole', () => {
+  expect(extractEmails('scrie la suport@bаncadunarea.ro acum')).toEqual(['suport@bаncadunarea.ro']);
+});

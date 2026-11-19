@@ -176,3 +176,14 @@ describe('invisible-character and IDNA obfuscation', () => {
     expect(flags(['Banca Dunărea: Codul de confirmare este 483920. Nu îl comunicați nimănui.'])).toEqual([]);
   });
 });
+
+describe('IDN email addresses', () => {
+  it('flags a homoglyph email domain, claimed organisation or not', () => {
+    expect(flags(['Banca Dunărea: scrieți la suport@bаncadunarea.ro'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Scrieți la suport@bаncadunarea.ro'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Scrieți la suport@bancadunărea.ro'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('still accepts the official address', () => {
+    expect(flags(['Banca Dunărea: scrieți la suport@bancadunarea.ro'])).toEqual([]);
+  });
+});
