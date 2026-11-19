@@ -68,9 +68,53 @@ export function checkConfig(c: PagerConfig): { origin: string } | { problem: Pag
   return { origin: url.origin };
 }
 
-/** Page once per chat: further messages in the same scam chat must not ring the family member again. */
-export function shouldPage(paged: Set<string>, chat: string, r: Result): boolean {
-  return r.verdict === 'SCAM' && !paged.has(chat);
+/** After an alert for a chat, wait this long before that chat can ring the family phone again. */
+export const COOLDOWN_MS = 2 * 60_000;
+
+/** What we remember per chat: when it last paged and which message triggered it. Hashes and times only. */
+export interface PageMark {
+  at: number;
+  msg: string;
+}
+
+export type PageDecision = 'page' | 'not_scam' | 'not_new' | 'cooldown';
+
+/**
+ * Page when the chat is SCAM and a NEW message arrived since the last alert, at most once per COOLDOWN_MS.
+ * - "new message": reopening the chat or WhatsApp re-rendering the same bubbles must not ring again;
+ * - cooldown: a scammer sending ten messages in a row rings once, but a fresh scam a few minutes later rings again.
+ * The mark lives in chrome.storage.session, so a service-worker restart does not reset it (that used to make
+ * alerts look random: sometimes repeated, sometimes missing).
+ */
+export function decidePage(mark: PageMark | undefined, r: Pick<Result, 'verdict'>, lastMsg: string, now: number): PageDecision {
+  if (r.verdict !== 'SCAM') return 'not_scam';
+  if (mark === undefined) return 'page';
+  if (mark.msg === lastMsg) return 'not_new';
+  if (now - mark.at < COOLDOWN_MS) return 'cooldown';
+  return 'page';
+}
+
+/** Retry on network errors, HTTP 429 and 5xx; give up at once on other 4xx (bad config). */
+export const RETRY_DELAYS_MS = [0, 2_000, 5_000];
+
+export async function sendWithRetry(
+  send: () => Promise<void>,
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((res) => setTimeout(res, ms)),
+): Promise<{ ok: true; attempts: number } | { ok: false; attempts: number; error: string }> {
+  let last = 'unknown';
+  for (let i = 0; i < RETRY_DELAYS_MS.length; i++) {
+    await sleep(RETRY_DELAYS_MS[i] ?? 0);
+    try {
+      await send();
+      return { ok: true, attempts: i + 1 };
+    } catch (e) {
+      last = e instanceof Error ? e.message : 'unknown';
+      const status = /^ntfy (\d{3})$/.exec(last)?.[1];
+      if (status !== undefined && status !== '429' && !status.startsWith('5')) break;
+      if (last.startsWith('pager config')) break;
+    }
+  }
+  return { ok: false, attempts: RETRY_DELAYS_MS.length, error: last };
 }
 
 const hhmm = (d: Date): string => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -83,8 +127,10 @@ export function pagerPayload(c: PagerConfig, r: Pick<Result, 'scamType'>, now: D
       topic: c.topic.trim(),
       title: 'Scam Shield: test',
       message: `Alertele pentru ${name} funcționează. Veți primi un mesaj aici dacă ${name} primește o țeapă pe WhatsApp.`,
-      priority: 3,
-      tags: ['white_check_mark'],
+      // Same priority as a real alert (5 = max): the test must ring exactly like the real thing, or a phone set up
+      // to ring only on max priority would look fine in the test and stay silent on a real scam.
+      priority: 5,
+      tags: ['rotating_light'],
     };
   }
   return {

@@ -49,8 +49,10 @@ Anyone who knows the topic can read its alerts, so keep the topic hard to guess.
    Server and topic are prefilled. Enter the name ("Mama"), tick **Trimite alerte**, click **Salvează**.
 3. **Trimite un test** sends a test alert. From a terminal: `curl -d "test" https://ntfy.sh/scamshield-family-676767`.
 
-If ntfy.sh or the phone is unreachable, the reader still gets the normal warning; the alert is retried once on the
-next message of that chat. With Wi-Fi off there is no family alert (the detector itself keeps working offline).
+When it rings: the chat is SCAM and a new message arrived since the last alert, at most once every 2 minutes per
+chat (reopening a chat never rings again). Sending is retried 3 times (0 s, 2 s, 5 s) on network errors, HTTP 429
+and 5xx. The options page shows the result of the last attempt. If ntfy.sh is unreachable, the reader still gets the
+normal warning. With Wi-Fi off there is no family alert (the detector itself keeps working offline).
 
 ## How it works
 

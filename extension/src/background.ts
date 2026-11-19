@@ -3,8 +3,9 @@ import { analyze, embed, loadWeights } from '@ss/engine';
 import weightsJson from '../../ml/out/weights.json';
 import { shouldNotify } from './banner';
 import { cachedEmbed } from './embedCache';
-import { sendPage, shouldPage } from './pager';
-import { loadPager } from './pagerStore';
+import { decidePage, sendPage, sendWithRetry } from './pager';
+import { loadMark, loadPager, saveLast, saveMark } from './pagerStore';
+import { threadKey } from './thread';
 
 // Runs in the extension's service worker, not in the page: only here may we call localhost:11434.
 // Ollama accepts the call only if OLLAMA_ORIGINS allows chrome-extension://*; otherwise analyze()
@@ -12,8 +13,8 @@ import { loadPager } from './pagerStore';
 const weights = loadWeights(weightsJson);
 const embedFn = cachedEmbed(embed);
 const lastNotified = new Map<number, string>();
-// Chats already paged in this browser session (keys are chat titles, kept in memory only).
-const paged = new Set<string>();
+// Chats with an alert decision in progress: two analyses of the same chat arriving together must not page twice.
+const paging = new Set<string>();
 
 export interface AnalyzeRequest {
   type: 'ss-analyze';
@@ -41,21 +42,26 @@ async function flagTab(tabId: number | undefined, chat: string, r: Result): Prom
 }
 
 /**
- * Pager to a trusted family member (opt-in, options page). Fire-and-forget: a dead ntfy server or a phone off the
- * network must never delay or break the warning the reader sees.
+ * Pager to a trusted family member (opt-in, options page). Runs independently of the badge and the Chrome
+ * notification, so a failure there can never swallow the alert, and a dead ntfy server never delays the banner.
  */
-async function pageFamily(chat: string, r: Result): Promise<void> {
-  if (!shouldPage(paged, chat, r)) return;
-  paged.add(chat); // claimed BEFORE any await: two analyses of the same chat must not page twice
+async function pageFamily(chat: string, s: Scenario, r: Result): Promise<void> {
+  if (r.verdict !== 'SCAM' || paging.has(chat)) return;
+  paging.add(chat);
   try {
     const cfg = await loadPager();
-    if (!cfg.enabled) {
-      paged.delete(chat);
-      return;
-    }
-    await sendPage(cfg, r);
+    if (!cfg.enabled) return;
+    const last = s.messages.at(-1);
+    const lastMsg = last ? threadKey('', [{ outgoing: last.from === 'reader', text: last.text }]) : '';
+    const now = Date.now();
+    if (decidePage(await loadMark(chat), r, lastMsg, now) !== 'page') return;
+    const res = await sendWithRetry(() => sendPage(cfg, r));
+    if (res.ok) await saveMark(chat, { at: now, msg: lastMsg });
+    await saveLast({ at: Date.now(), outcome: res.ok ? 'sent' : 'failed', attempts: res.attempts, ...(res.ok ? {} : { error: res.error }) });
   } catch {
-    paged.delete(chat); // not delivered: allow one more try on the next message of this chat
+    // storage unavailable: nothing to page with; the reader's own warning is unaffected
+  } finally {
+    paging.delete(chat);
   }
 }
 
@@ -63,9 +69,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!isRequest(message)) return undefined;
   void analyze(message.scenario, { weights, embedFn })
     .then(async (r) => {
-      await flagTab(sender.tab?.id, message.chat, r);
       sendResponse(r);
-      void pageFamily(message.chat, r);
+      // Separate try blocks: a closed tab or a notification error used to skip the reply AND the family alert.
+      await Promise.allSettled([flagTab(sender.tab?.id, message.chat, r), pageFamily(message.chat, message.scenario, r)]);
     })
     .catch(() => sendResponse(null));
   return true; // keeps the channel open for the async reply

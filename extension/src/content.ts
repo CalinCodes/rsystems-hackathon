@@ -7,6 +7,8 @@ import { renderBanner, markFirstAlert } from './view';
 // Runs inside web.whatsapp.com. It reads only the chat that is open on screen, sends it to the extension's
 // own service worker for analysis, and draws the result. Nothing is stored and nothing goes to a server.
 const DEBOUNCE_MS = 800;
+/** A quiet chat produces no DOM changes, so a failed analysis schedules its own retry. */
+const RETRY_MS = 3_000;
 let lastThread = '';
 let dismissed = '';
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -19,8 +21,20 @@ async function check(): Promise<void> {
   lastThread = thread;
   const scenario = toScenario(chat.title, chat.messages);
   const chatKey = threadKey(chat.title, []);
-  const r = await chrome.runtime.sendMessage<Result | null>({ type: 'ss-analyze', chat: chatKey, scenario });
-  if (r === null || thread !== lastThread) return; // a newer read superseded this one
+  let r: Result | null = null;
+  try {
+    r = await chrome.runtime.sendMessage<Result | null>({ type: 'ss-analyze', chat: chatKey, scenario });
+  } catch {
+    r = null; // service worker was waking up or restarting
+  }
+  if (r === null) {
+    // Forget this thread so the next page change retries it: otherwise one failed call skipped the chat for good.
+    if (thread === lastThread) lastThread = '';
+    clearTimeout(timer);
+    timer = setTimeout(() => void check().catch(() => undefined), RETRY_MS);
+    return;
+  }
+  if (thread !== lastThread) return; // a newer read superseded this one
   const model = bannerModel(r, scenario);
   const key = `${chatKey}:${r.verdict}`;
   renderBanner(dismissed === key ? null : model, () => {

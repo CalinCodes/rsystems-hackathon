@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Result } from '@ss/contracts';
-import { checkConfig, EMPTY_PAGER, isLocalHost, pagerPayload, sendPage, shouldPage, type PagerConfig } from './pager';
+import { checkConfig, COOLDOWN_MS, decidePage, EMPTY_PAGER, isLocalHost, pagerPayload, sendPage, sendWithRetry, type PagerConfig } from './pager';
 
 const cfg: PagerConfig = { enabled: true, server: 'http://192.168.1.20:8090', topic: 'familia-pop-7k2', name: 'Mama' };
 const r = (verdict: Result['verdict'], scamType: Result['scamType'] = 'BANK_IMPERSONATION') => ({ verdict, scamType }) as Result;
@@ -34,14 +34,31 @@ describe('pager', () => {
     expect(checkConfig(cfg)).toEqual({ origin: 'http://192.168.1.20:8090' });
   });
 
-  it('pages only on SCAM, once per chat', () => {
-    const paged = new Set<string>();
-    expect(shouldPage(paged, 'A', r('SUSPICIOUS'))).toBe(false);
-    expect(shouldPage(paged, 'A', r('SAFE'))).toBe(false);
-    expect(shouldPage(paged, 'A', r('SCAM'))).toBe(true);
-    paged.add('A');
-    expect(shouldPage(paged, 'A', r('SCAM'))).toBe(false);
-    expect(shouldPage(paged, 'B', r('SCAM'))).toBe(true);
+  it('pages on SCAM with a new message, once per cooldown', () => {
+    const t = 1_000_000;
+    expect(decidePage(undefined, r('SUSPICIOUS'), 'm1', t)).toBe('not_scam');
+    expect(decidePage(undefined, r('SCAM'), 'm1', t)).toBe('page');
+    const mark = { at: t, msg: 'm1' };
+    expect(decidePage(mark, r('SCAM'), 'm1', t + 10 * COOLDOWN_MS)).toBe('not_new'); // chat reopened, nothing new
+    expect(decidePage(mark, r('SCAM'), 'm2', t + 1_000)).toBe('cooldown'); // scammer keeps typing
+    expect(decidePage(mark, r('SCAM'), 'm2', t + COOLDOWN_MS)).toBe('page'); // a new scam message later
+  });
+
+  it('retries network errors and 429/5xx, not other 4xx', async () => {
+    const sleep = async () => undefined;
+    let n = 0;
+    const flaky = async () => {
+      n += 1;
+      if (n < 3) throw new Error(n === 1 ? 'Failed to fetch' : 'ntfy 429');
+    };
+    expect(await sendWithRetry(flaky, sleep)).toEqual({ ok: true, attempts: 3 });
+    let m = 0;
+    const bad = async () => {
+      m += 1;
+      throw new Error('ntfy 400');
+    };
+    expect((await sendWithRetry(bad, sleep)).ok).toBe(false);
+    expect(m).toBe(1);
   });
 
   it('payload has name, time and type in plain words, and nothing from the chat', () => {
@@ -52,6 +69,10 @@ describe('pager', () => {
     expect(String(p.message)).toContain('14:05');
     expect(String(p.message)).toContain('bancă falsă');
     expect(Object.keys(p).sort()).toEqual(['message', 'priority', 'tags', 'title', 'topic']);
+  });
+
+  it('the test alert uses the same max priority as a real alert', () => {
+    expect(pagerPayload(cfg, r('SCAM'), new Date(), true).priority).toBe(5);
   });
 
   it('POSTs JSON to the server root and throws on HTTP error', async () => {
