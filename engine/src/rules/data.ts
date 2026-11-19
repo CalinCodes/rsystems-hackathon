@@ -1,6 +1,6 @@
 import type { Hit, Scenario } from '@ss/contracts';
 import { extractEmails, extractPhones, extractUrls } from '../normalize';
-import { hostOf, isOfficialHost, ORGS } from './contact';
+import { hostOf, isOfficialHost, ORGS, type Org } from './contact';
 import { senderIsOrg } from './sender';
 import { GAP, NOT, firstHit, isDenied, makeHit, perSenderMessage, type MsgCtx, type Rule } from './util';
 
@@ -23,34 +23,41 @@ const BANK_ACCOUNT_RE = new RegExp(
   'g',
 );
 
+
+const officialHost = (host: string): boolean => ORGS.some((o) => isOfficialHost(host, o.site));
+
 /**
- * At least one link, every link on an official catalog domain, AND no other way to reach someone: every e-mail address
- * and phone number in the message must be official too. Otherwise an official link next to "sunati la 0721 ..." would
- * switch the rule off while still sending the reader to the scammer.
+ * Every link, e-mail address and phone number in the message is official (vacuously true when there are none).
+ * Without this, a verified sender or an official link next to "sunati la 0721 ..." would switch the rule off while
+ * still sending the reader to the scammer.
  */
-function onlyOfficialContacts(m: MsgCtx): boolean {
-  const urls = extractUrls(m.raw);
-  if (urls.length === 0) return false;
-  const officialHost = (host: string): boolean => ORGS.some((o) => isOfficialHost(host, o.site));
+function allContactsOfficial(m: MsgCtx): boolean {
   const emailsOk = extractEmails(m.raw).every((e) => officialHost(e.toLowerCase().slice(e.lastIndexOf('@') + 1)));
   const phonesOk = extractPhones(m.raw).every((p) => ORGS.some((o) => o.phones.includes(p)));
-  return urls.every((u) => officialHost(hostOf(u))) && emailsOk && phonesOk;
+  return extractUrls(m.raw).every((u) => officialHost(hostOf(u))) && emailsOk && phonesOk;
 }
 
 /**
- * A verified sender exempts the request only if it is a verified BANK, or the organisation the message itself names.
- * A verified shop telling you to "log in to your bank account" is exactly the scam, so "verified as anything" is not
- * enough. (The catalog has no organisation type, so a bank is recognised by "banc" in its name.)
+ * The catalog has no organisation type, so a bank is recognised by "banc" in its name.
+ * Only a verified BANK sender can vouch for a request to log in to a bank account: a verified shop sending the same
+ * words is the scam. Nothing in the message text is consulted (a text can name any organisation it likes).
  */
-function senderIsRelevantOrg(sender: Scenario['sender'], m: MsgCtx): boolean {
-  return ORGS.some((o) => (o.nameRe.test(m.norm) || o.nameSrc.includes('banc')) && senderIsOrg(sender, o));
+const isBank = (o: Org): boolean => o.nameSrc.includes('banc');
+const senderIsVerifiedBank = (sender: Scenario['sender']): boolean => ORGS.some((o) => isBank(o) && senderIsOrg(sender, o));
+
+/**
+ * Exempt only if every contact in the message is official AND there is positive evidence: a verified bank sender, or
+ * at least one official link to go with it. A verified bank sender with a foreign link is NOT exempt.
+ */
+function exempt(m: MsgCtx, sender: Scenario['sender']): boolean {
+  if (!allContactsOfficial(m)) return false;
+  return senderIsVerifiedBank(sender) || extractUrls(m.raw).length > 0;
 }
 
 function bankAccountAccess(m: MsgCtx, sender: Scenario['sender']): Hit | null {
   for (const match of m.norm.matchAll(BANK_ACCOUNT_RE)) {
     const idx = match.index ?? 0;
-    if (isDenied(m.norm, idx)) continue;
-    if (senderIsRelevantOrg(sender, m) || onlyOfficialContacts(m)) continue;
+    if (isDenied(m.norm, idx) || exempt(m, sender)) continue;
     return makeHit('RF_DATA_REQUEST', m, idx, match[0].length);
   }
   return null;

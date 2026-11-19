@@ -288,3 +288,27 @@ describe('review round 4: an alphanumeric sender id must BE the name, not contai
     expect(flagsOf(s)).toContain('RF_IMPERSONATION');
   });
 });
+
+describe('review round 5: the data-request exemption trusts no text and no non-bank', () => {
+  const login = 'Intrați în contul de bancă și confirmați';
+
+  it('a verified SHOP cannot exempt it, even by writing its own name in the text', () => {
+    expect(flags(login, { address: 'MegaShop' })).toContain('RF_DATA_REQUEST');
+    expect(flags('MegaShop: intrați în contul de bancă și confirmați', { address: 'MegaShop' })).toContain('RF_DATA_REQUEST');
+    expect(flags('Intrați în contul de bancă și confirmați, MegaShop vă mulțumește', { address: 'megashop.ro@megashop.ro' })).toContain('RF_DATA_REQUEST');
+  });
+  it('a verified BANK with no foreign contacts is exempt', () => {
+    expect(flags(login, { address: 'BancaDunarea' })).not.toContain('RF_DATA_REQUEST');
+    expect(flags(login, { address: 'alerte@bancadunarea.ro' })).not.toContain('RF_DATA_REQUEST');
+  });
+  it('a verified bank sender does NOT exempt a message carrying a foreign link, number or address', () => {
+    const bank = { address: 'BancaDunarea' };
+    expect(flags(`${login}: bancadunarea-x.example`, bank)).toContain('RF_DATA_REQUEST');
+    expect(flags(`${login}, sunați la 0721 555 000`, bank)).toContain('RF_DATA_REQUEST');
+    expect(flags(`${login}, scrieți la ajutor@evil.xyz`, bank)).toContain('RF_DATA_REQUEST');
+  });
+  it('an unverified sender is exempt only through official links, with every contact official', () => {
+    expect(flags(`${login} pe bancadunarea.ro`)).not.toContain('RF_DATA_REQUEST');
+    expect(flags(login)).toContain('RF_DATA_REQUEST');
+  });
+});
