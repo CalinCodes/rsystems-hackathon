@@ -1,0 +1,13 @@
+{
+  "id": "F01",
+  "channel": "whatsapp",
+  "sender": { "name": null, "address": "+40 700 000 111", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Bună, mamă! Mi-am schimbat numărul, ăsta e cel nou. Salvează-l te rog." },
+    { "n": 2, "from": "reader", "text": "Bună! Cine ești, dragul mamei?" },
+    { "n": 3, "from": "sender", "text": "Sunt eu, Andrei. Telefonul vechi s-a stricat și sunt la service." },
+    { "n": 4, "from": "sender", "text": "Am o factură de plătit azi și nu pot accesa contul. Poți să-mi transferi 2.500 lei în IBAN-ul acesta: RO00FAKE0000000000000001?" },
+    { "n": 5, "from": "sender", "text": "Te rog repede, termenul expiră în o oră!" },
+    { "n": 6, "from": "sender", "text": "Nu spune nimănui, nici lui tata, te explic eu mai târziu." }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "scam-shield",
+  "private": true,
+  "type": "module",
+  "workspaces": ["contracts", "engine", "eval", "app"],
+  "scripts": {
+    "eval": "tsx eval/eval.ts",
+    "test": "vitest run",
+    "dev": "npm run dev -w app"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

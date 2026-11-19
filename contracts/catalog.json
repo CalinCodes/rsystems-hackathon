@@ -1,0 +1,9 @@
+{
+  "organisations": [
+    { "name": "Banca Dunărea", "site": "bancadunarea.ro", "phone": "0800 100 200" },
+    { "name": "CurierExpres", "site": "curierexpres.ro", "phone": "0800 300 400" },
+    { "name": "PiațaMea", "site": "piatamea.ro", "phone": null },
+    { "name": "MegaShop", "site": "megashop.ro", "phone": "0800 500 600" },
+    { "name": "ANAF", "site": "anaf.ro", "phone": "031 403 91 60" }
+  ]
+}

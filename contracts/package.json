@@ -1,0 +1,16 @@
+{
+  "name": "@ss/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./types": "./types.ts",
+    "./constants": "./constants.ts",
+    "./catalog.json": "./catalog.json",
+    "./weights.stub.json": "./weights.stub.json",
+    "./mock-results.json": "./mock-results.json"
+  }
+}

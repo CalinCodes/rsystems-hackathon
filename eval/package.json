@@ -1,0 +1,7 @@
+{
+  "name": "@ss/eval",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@ss/contracts": "*", "@ss/engine": "*" }
+}

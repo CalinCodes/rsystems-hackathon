@@ -1,0 +1,6 @@
+- type: COURIER_FEE
+  flags: [RF_IMPERSONATION, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "{courier}: Coletul dvs. nu poate fi livrat. Plătiți taxa de {amount} aici: {fake_link}"
+- type: FAMILY_EMERGENCY
+  flags: [RF_NEW_NUMBER, RF_PAYMENT_REQUEST, RF_URGENCY, RF_SECRECY]
+  text: "Mamă, sunt {family_name}, am alt număr: {phone_unknown}. Trimite-mi {amount} urgent și nu spune nimănui."

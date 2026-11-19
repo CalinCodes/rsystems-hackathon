@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #fbf6ee;
+  --color-surface: #ffffff;
+  --color-ink: #2a2118;
+  --color-safe: #2e7d4f;
+  --color-suspicious: #b7791f;
+  --color-scam: #c0392b;
+  --radius-card: 18px;
+  --font-heading: "Fraunces", serif;
+  --font-body: "Source Sans 3", sans-serif;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 1.125rem; /* 18px: readable baseline for elderly users */
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+}

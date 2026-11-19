@@ -1,0 +1,6 @@
+- type: BANK_IMPERSONATION
+  flags: [RF_IMPERSONATION, RF_THREAT, RF_URGENCY, RF_SUSPICIOUS_CONTACT]
+  text: "{bank}: Cardul dvs. a fost blocat. Pentru deblocare accesați în {deadline}: {fake_link}"
+- type: NONE
+  flags: []
+  text: "{bank}: Codul de confirmare este {code}. Nu îl comunicați nimănui."

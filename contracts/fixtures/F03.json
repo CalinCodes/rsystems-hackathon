@@ -1,0 +1,8 @@
+{
+  "id": "F03",
+  "channel": "sms",
+  "sender": { "name": "Banca Dunărea", "address": "BancaDunarea", "known_contact": true },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Banca Dunărea: Codul de confirmare pentru plata online este 483920. Nu îl comunicați nimănui." }
+  ]
+}

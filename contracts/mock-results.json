@@ -1,0 +1,55 @@
+[
+  {
+    "id": "F01",
+    "verdict": "SCAM",
+    "scamType": "FAMILY_EMERGENCY",
+    "score": 80,
+    "firstAlert": 4,
+    "timeline": [20, 20, 20, 45, 60, 80],
+    "hits": [
+      { "flag": "RF_NEW_NUMBER", "msg": 1, "evidence": "mi-am schimbat numărul", "src": "rule" },
+      { "flag": "RF_PAYMENT_REQUEST", "msg": 4, "evidence": "transferi 2.500 lei", "src": "rule" },
+      { "flag": "RF_URGENCY", "msg": 5, "evidence": "repede, termenul expiră în o oră", "src": "rule" },
+      { "flag": "RF_SECRECY", "msg": 6, "evidence": "nu spune nimănui", "src": "rule" }
+    ],
+    "warning": {
+      "ro": "Atenție! Aceasta pare o înșelătorie. Cineva se dă drept ruda dumneavoastră și cere bani. Nu trimiteți nimic.",
+      "en": "Warning! This looks like a scam. Someone is posing as your relative and asking for money. Do not send anything.",
+      "action": "Sunați ruda la numărul pe care îl aveți deja salvat."
+    },
+    "timingsMs": { "total": 0 }
+  },
+  {
+    "id": "F02",
+    "verdict": "SUSPICIOUS",
+    "scamType": "PRIZE_LOTTERY",
+    "score": 35,
+    "firstAlert": 1,
+    "timeline": [35],
+    "hits": [
+      { "flag": "RF_TOO_GOOD", "msg": 1, "evidence": "ați câștigat un voucher de 5.000 lei", "src": "rule" },
+      { "flag": "RF_URGENCY", "msg": 1, "evidence": "răspundeți în 24 de ore", "src": "rule" }
+    ],
+    "warning": {
+      "ro": "Mesajul poate fi o înșelătorie. Un premiu pe care nu l-ați cerut este un semn de alarmă. Nu răspundeți.",
+      "en": "This message may be a scam. A prize you never asked for is a warning sign. Do not reply.",
+      "action": "Dacă aveți dubii, sunați MegaShop la 0800 500 600."
+    },
+    "timingsMs": { "total": 0 }
+  },
+  {
+    "id": "F03",
+    "verdict": "SAFE",
+    "scamType": "NONE",
+    "score": 0,
+    "firstAlert": null,
+    "timeline": [0],
+    "hits": [],
+    "warning": {
+      "ro": "Mesajul pare în regulă. Este un cod de la bancă, cerut de dumneavoastră. Nu îl spuneți nimănui.",
+      "en": "The message looks fine. It is a bank code you requested. Do not tell it to anyone.",
+      "action": "Nu este nevoie de nicio acțiune."
+    },
+    "timingsMs": { "total": 0 }
+  }
+]

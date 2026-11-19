@@ -1,0 +1,8 @@
+{
+  "id": "F02",
+  "channel": "sms",
+  "sender": { "name": null, "address": "MEGA-PREMII", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Felicitări! Ați câștigat un voucher MegaShop de 5.000 lei. Răspundeți în 24 de ore pentru a-l revendica." }
+  ]
+}

@@ -1,0 +1,12 @@
+# Fictional organisations/values only.
+bank: [Banca Dunărea, BancaDunarea]
+courier: [CurierExpres, Curier Express]
+shop: [MegaShop, PiațaMea]
+authority: [ANAF, Poliția Rutieră]
+official_link: [bancadunarea.ro, curierexpres.ro, megashop.ro, anaf.ro]
+fake_link: [bancadunarea-securizat.example, curierexpres-colet.example, megashop-premii.example]
+deadline: [24 de ore, 2 ore, 30 de minute]
+amount: [150 lei, 2.500 lei, 9,99 lei]
+code: ["483920", "117204", "902561"]
+family_name: [Andrei, Mihai, Elena]
+phone_unknown: ["+40 700 000 111", "+40 700 000 222"]

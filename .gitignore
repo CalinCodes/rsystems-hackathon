@@ -1,0 +1,6 @@
+node_modules
+dist
+ml/.venv
+ml/out/dataset.jsonl
+data/
+*.local.*
