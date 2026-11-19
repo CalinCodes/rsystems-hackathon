@@ -263,3 +263,22 @@ describe('hosts are found by character class, not by separators', () => {
     expect(claimed('«bancadunarea.ro»')).toEqual([]);
   });
 });
+
+describe('review round: padding and multi-@ addresses', () => {
+  it('amount padding cannot dodge the payment rule', () => {
+    const pad = ' '.repeat(40);
+    expect(flags([`Trimiteți 100${pad}lei acum`])).toContain('RF_PAYMENT_REQUEST');
+    expect(flags(['Trimiteți 100' + '.'.repeat(30) + 'lei acum'])).toContain('RF_PAYMENT_REQUEST');
+    expect(flags(['Transferă 1 850 lei și 2,99 lei'])).toContain('RF_PAYMENT_REQUEST');
+    expect(flags(['Transferă €500 urgent'])).toContain('RF_PAYMENT_REQUEST');
+  });
+  it('an address with a second "@" is judged by the domain after the LAST one', () => {
+    expect(flags(['Banca Dunărea: scrieți la official@bancadunarea.ro.x@evil.xyz'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Banca Dunărea: scrieți la official@bancadunarea.ro-x@evil.xyz'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Scrieți la official@bancadunarea.ro.x@evil.xyz'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('plain official addresses and sentence punctuation are fine', () => {
+    expect(flags(['Banca Dunărea: scrieți la suport@bancadunarea.ro.'])).toEqual([]);
+    expect(flags(['Banca Dunărea: scrieți la (suport@bancadunarea.ro), vă răspundem.'])).toEqual([]);
+  });
+});

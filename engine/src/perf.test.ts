@@ -27,6 +27,10 @@ const CASES: Record<string, string> = {
   'dotted labels': 'ro.'.repeat(N / 3),
   'repeated request words': 'trimite cod '.repeat(N / 12),
   'repeated denials': 'nu il comunicati codul '.repeat(N / 23),
+  'digits and padding then no currency': ('1' + ' '.repeat(50)).repeat(N / 51),
+  'many addresses': 'a@b.ro/ '.repeat(N / 8),
+  'at signs': '@'.repeat(N),
+  'address chars, many at': 'a@'.repeat(N / 2) + 'b',
   'payment verbs and digits': 'platiti 1 '.repeat(N / 10),
 };
 

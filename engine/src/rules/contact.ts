@@ -92,9 +92,10 @@ function messageHits(m: MsgCtx, claimed: Org[]): Hit[] {
     else if (claimed.length === 0 && RISKY_TLD.test(host)) flag(url);
   }
   for (const email of extractEmails(m.raw)) {
-    const domain = email.toLowerCase().split('@')[1] ?? '';
+    // The domain is whatever follows the LAST "@" (that is where mail is delivered); a second "@" is itself a red flag.
+    const domain = email.toLowerCase().slice(email.lastIndexOf('@') + 1);
     const foreign = claimed.length > 0 ? !claimed.some((o) => isOfficialHost(domain, o.site)) : SHORTENERS.test(domain) || RISKY_TLD.test(domain);
-    if (foreign || hasExoticHost(domain, hostOf(domain))) flag(email);
+    if (foreign || email.indexOf('@') !== email.lastIndexOf('@') || hasExoticHost(domain, hostOf(domain))) flag(email);
   }
   if (claimed.length === 0) return out;
 
@@ -110,7 +111,7 @@ function senderHits(c: Parameters<Rule>[0], m: MsgCtx, claimed: Org[]): Hit[] {
   if (!address || known_contact || claimed.length === 0) return [];
   const compact = address.replace(/[\s.-]/g, '');
   const bad = address.includes('@')
-    ? !claimed.some((o) => isOfficialHost(address.toLowerCase().split('@')[1] ?? '', o.site))
+    ? !claimed.some((o) => isOfficialHost(address.toLowerCase().slice(address.lastIndexOf('@') + 1), o.site))
     : MOBILE.test(compact);
   return bad ? [makeHit('RF_SUSPICIOUS_CONTACT', m, 0, 0)].map((h) => ({ ...h, evidence: 'sender address' })) : [];
 }

@@ -33,10 +33,41 @@ export interface Amount {
   raw: string;
 }
 
-// Unicode-aware like URL_RE: an ASCII-only pattern would skip "user@bаncadunarea.ro" (Cyrillic а) entirely, and
-// URL_RE refuses to start a host right after "@", so neither extractor would see it.
-// Leading lookbehind: start only at the beginning of a local-part run, never mid-run (avoids quadratic rescans).
-const EMAIL_RE = /(?<![\p{L}\p{N}._%+-])[\p{L}\p{N}._%+-]+@[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)*\.\p{L}{2,}/giu;
+/**
+ * Email addresses are found by a LINEAR scan, not one big regex: runs of address characters (Unicode-aware, so
+ * "user@bаncadunarea.ro" with a Cyrillic а is seen), split at the LAST "@", domain validated label by label.
+ * WHY the last "@": for "official@bank.ro.x@evil.xyz" a mail client delivers to evil.xyz; a regex that stops at the
+ * first match would report the official-looking "official@bank.ro" and miss the real destination.
+ * WHY no regex for the whole shape: nested quantifiers over a shared character class go quadratic on long runs.
+ */
+const EMAIL_CHARS = /[\p{L}\p{N}._%+@-]+/gu;
+
+interface EmailSpan {
+  index: number;
+  end: number;
+  value: string;
+}
+
+function isDomain(domain: string): boolean {
+  const labels = domain.split('.');
+  if (labels.length < 2) return false;
+  if (!labels.every((l) => /^[\p{L}\p{N}_-]+$/u.test(l))) return false;
+  return /^\p{L}{2,}$/u.test(labels[labels.length - 1] ?? '');
+}
+
+function emailSpans(text: string): EmailSpan[] {
+  const out: EmailSpan[] = [];
+  for (const m of text.matchAll(EMAIL_CHARS)) {
+    if (!m[0].includes('@')) continue;
+    const value = m[0].replace(/[.%+_-]+$/, ''); // sentence punctuation after the address is not part of it
+    const at = value.lastIndexOf('@');
+    if (at <= 0 || !isDomain(value.slice(at + 1))) continue;
+    const index = m.index ?? 0;
+    out.push({ index, end: index + value.length, value });
+  }
+  return out;
+}
+
 /**
  * Bare hosts are matched as the WHOLE dotted token, ending only at a real boundary. A TLD allowlist inside the regex
  * would stop at "bancadunarea.ro" in "bancadunarea.ro.evil.zzz" and report an official-looking host.
@@ -63,15 +94,23 @@ const CODE_RE = /(?<![\d+.,-])\d{4,8}(?![\d]|[.,]\d)/g;
 const trimTrailing = (s: string): string => s.replace(/[.,;:!?)\]]+$/, '');
 
 export function extractEmails(text: string): string[] {
-  return canonicalize(text).match(EMAIL_RE) ?? [];
+  return emailSpans(canonicalize(text)).map((s) => s.value);
 }
 
 const SCHEME_URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>"']+/gi;
 
-// "user@host/path" without a scheme: an email followed by a path is really a link with userinfo.
-const EMAIL_PATH_RE = new RegExp(String.raw`${EMAIL_RE.source}[/?#][^\s<>"']*`, 'giu');
-
 const blank = (text: string, re: RegExp): string => text.replace(re, (m) => ' '.repeat(m.length));
+/** Blank many ascending, non-overlapping ranges in ONE pass (per-range string copies would be quadratic). */
+function blankRanges(text: string, ranges: [number, number][]): string {
+  let out = '';
+  let pos = 0;
+  for (const [from, to] of ranges) {
+    out += text.slice(pos, from) + ' '.repeat(to - from);
+    pos = to;
+  }
+  return out + text.slice(pos);
+}
+const PATH_TAIL_RE = /[^\s<>"']*/y;
 
 /**
  * Scheme-prefixed URLs are taken BEFORE emails are blanked: "https://bancadunarea.ro@evil.xyz/x"
@@ -83,8 +122,19 @@ export function extractUrls(raw: string): string[] {
   const found: { index: number; url: string }[] = [];
   for (const m of text.matchAll(SCHEME_URL_RE)) found.push({ index: m.index ?? 0, url: m[0] });
   const noScheme = blank(text, SCHEME_URL_RE);
-  for (const m of noScheme.matchAll(EMAIL_PATH_RE)) found.push({ index: m.index ?? 0, url: m[0] });
-  const rest = blank(blank(noScheme, EMAIL_PATH_RE), EMAIL_RE);
+  const ranges: [number, number][] = [];
+  for (const s of emailSpans(noScheme)) {
+    // "user@host/path" with no scheme is really a link with userinfo; a plain address is just blanked out.
+    const next = noScheme[s.end];
+    let end = s.end;
+    if (next === '/' || next === '?' || next === '#') {
+      PATH_TAIL_RE.lastIndex = s.end;
+      end += PATH_TAIL_RE.exec(noScheme)?.[0].length ?? 0;
+      found.push({ index: s.index, url: noScheme.slice(s.index, end) });
+    }
+    ranges.push([s.index, end]);
+  }
+  const rest = blankRanges(noScheme, ranges);
   for (const m of rest.matchAll(URL_RE)) if (looksLikeUrl(m[0])) found.push({ index: m.index ?? 0, url: m[0] });
   return found.sort((a, b) => a.index - b.index).map((f) => trimTrailing(f.url));
 }
