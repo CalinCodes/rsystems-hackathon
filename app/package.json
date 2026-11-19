@@ -12,6 +12,7 @@
     "@fontsource/source-sans-3": "^5.1.0",
     "@ss/contracts": "*",
     "@ss/engine": "*",
+    "framer-motion": "^14.14.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

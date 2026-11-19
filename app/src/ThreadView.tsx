@@ -15,7 +15,7 @@ export function ThreadView({ messages, hits }: ThreadViewProps) {
         const flags = [...new Set(hits.filter((h) => h.msg === m.n).map((h) => h.flag))];
         return (
           <li key={m.n} className="rounded-card border border-ink/20 bg-surface p-3">
-            <p className="text-sm font-semibold">
+            <p className="font-semibold">
               {m.n}. {m.from === 'reader' ? 'Dumneavoastră' : 'Expeditor'}
             </p>
             <p className="whitespace-pre-wrap">
@@ -34,7 +34,7 @@ export function ThreadView({ messages, hits }: ThreadViewProps) {
               )}
             </p>
             {flags.length > 0 && (
-              <ul className="mt-2 flex flex-wrap gap-2 text-sm">
+              <ul className="mt-2 flex flex-wrap gap-2">
                 {flags.map((f) => (
                   <li key={f} className="rounded-full border border-suspicious px-3 py-1">
                     {flagLabel(f)}

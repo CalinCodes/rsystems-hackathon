@@ -1,66 +1,66 @@
 import { useState } from 'react';
-import type { Channel } from '@ss/contracts';
+import type { Channel, Scenario } from '@ss/contracts';
+import { ChannelFields } from './ChannelFields';
 import { EXAMPLES } from './examples';
-import { CHANNEL_OPTIONS, type PasteInput } from './scenario';
+import { OpenFileButton } from './OpenFileButton';
+import { buildScenario } from './scenario';
 
 interface PasteFormProps {
   busy: boolean;
-  onSubmit: (input: PasteInput) => void;
+  onCheck: (s: Scenario) => void;
+  onInvalidFile: () => void;
 }
 
-const BUTTON = 'min-h-12 rounded-card border-2 px-4 font-semibold disabled:opacity-50';
+const SECONDARY = 'min-h-14 rounded-card border-2 border-ink/30 bg-surface px-5 font-semibold disabled:opacity-50';
 
-export function PasteForm({ busy, onSubmit }: PasteFormProps) {
+export function PasteForm({ busy, onCheck, onInvalidFile }: PasteFormProps) {
   const [text, setText] = useState('');
   const [channel, setChannel] = useState<Channel>('sms');
   const [knownContact, setKnownContact] = useState(false);
-  const empty = text.trim() === '';
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit({ text, channel, knownContact });
+        onCheck(buildScenario({ text, channel, knownContact }));
       }}
     >
-      <label className="flex flex-col gap-1 font-semibold">
+      <label className="flex flex-col gap-2 font-heading text-2xl">
         Lipiți aici mesajul primit
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={8}
-          className="rounded-card border-2 border-ink/30 bg-surface p-3 font-normal"
+          rows={7}
+          className="rounded-card border-2 border-ink/30 bg-surface p-4 font-body text-xl font-normal shadow-soft"
         />
       </label>
-      <p className="text-sm">Pentru o conversație, lăsați un rând gol între mesaje. Începeți răspunsul dumneavoastră cu „Eu:”.</p>
-      <label className="flex flex-col gap-1 font-semibold">
-        De unde vine mesajul
-        <select
-          value={channel}
-          onChange={(e) => setChannel(e.target.value as Channel)}
-          className="min-h-12 rounded-card border-2 border-ink/30 bg-surface px-3 font-normal"
-        >
-          {CHANNEL_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={knownContact}
-          onChange={(e) => setKnownContact(e.target.checked)}
-          className="size-6"
-        />
-        Expeditorul este în agenda telefonului dumneavoastră
-      </label>
-      <button type="submit" disabled={empty || busy} className={`${BUTTON} border-ink bg-ink text-surface`}>
-        {busy ? 'Se verifică…' : 'Verifică mesajul'}
+      <p className="text-ink/70">
+        Pentru o conversație, lipiți toate mesajele. Începeți fiecare răspuns al dumneavoastră cu „Eu:”.
+      </p>
+      <ChannelFields
+        channel={channel}
+        knownContact={knownContact}
+        onChannel={setChannel}
+        onKnownContact={setKnownContact}
+      />
+      <button
+        type="submit"
+        disabled={text.trim() === '' || busy}
+        className="min-h-20 w-full rounded-card bg-ink px-6 text-2xl font-semibold text-surface shadow-soft disabled:opacity-50"
+      >
+        Verifică mesajul
       </button>
-      <div className="flex flex-wrap gap-2" aria-label="Exemple">
+      <div className="flex flex-wrap gap-3">
+        <OpenFileButton disabled={busy} onScenario={onCheck} onInvalid={onInvalidFile} />
         {EXAMPLES.map((ex) => (
-          <button key={ex.label} type="button" disabled={busy} onClick={() => onSubmit(ex.input)} className={`${BUTTON} border-ink/30 bg-surface`}>
+          <button
+            key={ex.label}
+            type="button"
+            disabled={busy}
+            onClick={() => onCheck(buildScenario(ex.input))}
+            className={SECONDARY}
+          >
             {ex.label}
           </button>
         ))}

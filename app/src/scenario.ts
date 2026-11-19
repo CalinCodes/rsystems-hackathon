@@ -14,28 +14,37 @@ export const CHANNEL_OPTIONS: { value: Channel; label: string }[] = [
   { value: 'call_transcript', label: 'Convorbire telefonică' },
 ];
 
-const READER_PREFIX = /^eu\s*:\s*/i;
+const READER_LINE = /^eu\s*:\s*/i;
 
 /**
- * One pasted box becomes a thread: a blank line separates messages, and a paragraph that starts
- * with "Eu:" is the reader's own reply. The id is fixed so the same paste always gives the same Result.
+ * Pasted text becomes a thread. A line starting with "Eu:" is the reader's own reply (one line).
+ * Other lines are the sender's: they stay in one message until a blank line or an "Eu:" line, so a
+ * single pasted message is one message and a pasted conversation keeps its turns. The id is fixed
+ * so the same paste always gives the same Result.
  */
 export function buildScenario(input: PasteInput): Scenario {
-  const parts = input.text
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter((p) => p.length > 0);
+  const messages: Scenario['messages'] = [];
+  let sender: string[] = [];
+  const add = (from: 'sender' | 'reader', text: string) => {
+    if (text !== '') messages.push({ n: messages.length + 1, from, text });
+  };
+  const flush = () => {
+    add('sender', sender.join('\n'));
+    sender = [];
+  };
+  for (const raw of input.text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (line === '') flush();
+    else if (READER_LINE.test(line)) {
+      flush();
+      add('reader', line.replace(READER_LINE, '').trim());
+    } else sender.push(line);
+  }
+  flush();
   return {
     id: 'paste',
     channel: input.channel,
     sender: { name: null, address: null, known_contact: input.knownContact },
-    messages: parts.map((part, i) => {
-      const fromReader = READER_PREFIX.test(part);
-      return {
-        n: i + 1,
-        from: fromReader ? 'reader' : 'sender',
-        text: fromReader ? part.replace(READER_PREFIX, '') : part,
-      };
-    }),
+    messages,
   };
 }
