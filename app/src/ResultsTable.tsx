@@ -41,7 +41,7 @@ export function ResultsTable({ rows, onOpen }: ResultsTableProps) {
             return (
               <tr key={row.key} className="border-b border-ink/15">
                 <td className={`${CELL} font-semibold`}>
-                  {onOpen ? (
+                  {onOpen && row.result ? (
                     <button type="button" onClick={() => onOpen(row)} className="min-h-11 underline decoration-2">
                       {row.id}
                     </button>
