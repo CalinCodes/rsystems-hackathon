@@ -13,7 +13,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | File | Contents | Reader |
 |---|---|---|
 | `out/weights.json` | `Weights` contract: per-flag logistic weights + softmax type model, trained on all rows | `loadWeights()` / `predict()` |
-| `out/thresholds.json` | Per flag: the probability cut to use, plus the CV precision/recall at that cut | engine, when it turns `predict()` output into `Hit`s |
+| `out/thresholds.json` | Per flag: the probability cut to use (CV precision ≥ 0.9), plus precision/recall at that cut | engine, when it turns `predict()` output into `Hit`s |
+| `out/thresholds.p80.json` | Same format, but with cuts at CV precision ≥ 0.8: more flags fire and there are more false alarms | engine, as the alternative set to compare |
 
 The embedding cache `out/emb_cache.npz` and `out/dataset.jsonl` are git-ignored.
 
@@ -26,6 +27,15 @@ precision is ≥ 0.9**, and it is never below 0.5.
 - `p >= threshold` → emit `{ flag, src: 'clf', p }`.
 - `threshold: null` → no cut is precise enough. **Ignore the classifier for that flag**
   and rely on rules only. Do not fall back to 0.5.
+
+**Which set to use.** The brief's scoring costs about 10 points for a missed scam and about
+5 for a false alarm on a SAFE message. Run the validation eval once with each file, using
+`--ablation`, and keep the set that scores higher. The sets differ on synthetic data:
+
+| Set | SAFE rows with a false flag | Flagged rows caught |
+|---|---|---|
+| p90 (`thresholds.json`) | 1.2% | 71.8% |
+| p80 (`thresholds.p80.json`) | 7.0% | 82.1% |
 
 `thresholds.json` lives outside `weights.json` because the `Weights` type in `contracts/`
 is frozen, and `loadWeights()` would drop any extra field.
@@ -43,6 +53,16 @@ any flag fires at its cut. It is the main number to keep low. When it rises, loo
 codes or links but ask for nothing).
 
 ## Adding templates
+
+`templates/kiro1_threads.yaml` holds single messages as they appear *inside* a thread:
+calm openers, reader replies, call-transcript lines, and the hook. Each message carries only
+its own flags, and openers carry none, so the classifier fires at the hook and not at the
+greeting. That is what `first_alert` is scored on.
+
+- Never copy validation or test scenario text into templates. Doing so makes the validation
+  check meaningless.
+- `official_link` must stay a subset of the `contracts/catalog.json` sites. `generator_test.py`
+  checks this.
 
 - Use only valid `FlagCode` / `ScamType` values. `generator_test.py` rejects unknown ones and
   unfilled `{slots}`.

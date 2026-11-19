@@ -1,0 +1,165 @@
+# Kiro 1 thread-style templates: single messages as they appear INSIDE a thread
+# (chat, WhatsApp, phone-call transcript), for bank, courier, authority, tech support,
+# account takeover and marketplace.
+#
+# WHY a separate file: kiro1.yaml holds one-shot SMS. Real threads open calmly, build
+# trust over several messages, and only then make the request. Each line here is ONE
+# message, labelled only with the flags THAT message carries, so the per-message
+# classifier fires at the hook and not at the greeting (first_alert depends on it).
+#
+# Openers and reader replies are type NONE with no flags: on their own they are
+# harmless, and a flag there would move first_alert too early.
+# Own wording only. Never copy validation or test scenario text here.
+
+# --- Calm openers and trust-building lines (no flags on their own) ---
+- type: NONE
+  flags: []
+  text: "Bună ziua, doamnă. Mă numesc {first_name}. Aveți două minute să vorbim?"
+- type: NONE
+  flags: []
+  text: "Bună ziua, domnule. Vă deranjez puțin, nu durează mult."
+- type: NONE
+  flags: []
+  text: "Nu vă faceți griji, e doar o verificare de rutină. Vă ajut eu pas cu pas."
+- type: NONE
+  flags: []
+  text: "Înțeleg perfect, e normal să fiți atent. Vă explic imediat despre ce e vorba."
+- type: NONE
+  flags: []
+  text: "Mulțumesc frumos că ați răspuns. Vă rog să aveți puțină răbdare cu mine."
+- type: NONE
+  flags: []
+  text: "Bună seara! Am văzut anunțul dvs. pentru {item}. Este încă de vânzare?"
+- type: NONE
+  flags: []
+  text: "Arată foarte bine în poze. Ce stare are {item}?"
+
+# --- Reader replies (the person we protect) ---
+- type: NONE
+  flags: []
+  text: "Da, bună ziua. Cine sunteți?"
+- type: NONE
+  flags: []
+  text: "Nu înțeleg. Ce trebuie să fac?"
+- type: NONE
+  flags: []
+  text: "Bine, am înțeles. Așteptați puțin."
+- type: NONE
+  flags: []
+  text: "Da, mai este. Prețul e cel din anunț."
+- type: NONE
+  flags: []
+  text: "Stați să-mi caut ochelarii."
+- type: NONE
+  flags: []
+  text: "Nu știu dacă e bine ce fac. Pot să-l sun pe fiul meu întâi?"
+
+# --- BANK_IMPERSONATION (call / chat) ---
+- type: BANK_IMPERSONATION
+  flags: [RF_IMPERSONATION]
+  text: "Vă sun de la departamentul de fraude al băncii {bank}. Sunt operatorul {first_name}."
+- type: BANK_IMPERSONATION
+  flags: [RF_THREAT]
+  text: "Cineva încearcă chiar acum să vă golească contul. Am oprit o plată de {amount}, dar mai urmează."
+- type: BANK_IMPERSONATION
+  flags: [RF_CODE_REQUEST, RF_URGENCY]
+  text: "Ca să anulăm plata, citiți-mi repede codul pe care tocmai l-ați primit prin SMS."
+- type: BANK_IMPERSONATION
+  flags: [RF_PAYMENT_REQUEST, RF_THREAT]
+  text: "Banii nu mai sunt în siguranță în contul vechi. Trebuie să-i mutați în contul de protecție pe care vi-l dictez."
+- type: BANK_IMPERSONATION
+  flags: [RF_SECRECY]
+  text: "Nu spuneți nimic angajaților de la ghișeu, unii dintre ei sunt implicați în fraudă."
+- type: BANK_IMPERSONATION
+  flags: [RF_DATA_REQUEST]
+  text: "Pentru verificare am nevoie de numărul cardului, data expirării și cele trei cifre de pe spate."
+
+# --- COURIER_FEE (chat / call) ---
+- type: COURIER_FEE
+  flags: [RF_IMPERSONATION]
+  text: "Bună ziua, sunt curierul de la {courier}. Am un colet pe numele dvs."
+- type: COURIER_FEE
+  flags: [RF_PAYMENT_REQUEST, RF_URGENCY]
+  text: "Coletul rămâne în depozit dacă nu plătiți azi taxa de manipulare de {amount}."
+- type: COURIER_FEE
+  flags: [RF_SUSPICIOUS_CONTACT, RF_DATA_REQUEST]
+  text: "Vă trimit acum linkul de plată, {fake_link}. Introduceți acolo cardul cu care plătiți."
+
+# --- AUTHORITY_IMPERSONATION (call) ---
+- type: AUTHORITY_IMPERSONATION
+  flags: [RF_IMPERSONATION]
+  text: "Sunt agentul {first_name} de la {authority}. Vă contactez în legătură cu un dosar pe numele dvs."
+- type: AUTHORITY_IMPERSONATION
+  flags: [RF_THREAT]
+  text: "Dosarul a ajuns la procuror. Dacă nu rezolvăm azi, riscați o amendă mare sau chiar arest."
+- type: AUTHORITY_IMPERSONATION
+  flags: [RF_PAYMENT_REQUEST, RF_URGENCY]
+  text: "Puteți opri totul dacă depuneți o garanție de {amount} până la ora 17."
+- type: AUTHORITY_IMPERSONATION
+  flags: [RF_TOO_GOOD]
+  text: "Am o veste bună: statul vă datorează o compensație de {amount}, iar banii vi se cuvin."
+- type: AUTHORITY_IMPERSONATION
+  flags: [RF_DATA_REQUEST]
+  text: "Ca să vă virăm suma, dictați-mi seria buletinului, CNP-ul și IBAN-ul."
+- type: AUTHORITY_IMPERSONATION
+  flags: [RF_SECRECY]
+  text: "Ancheta e secretă, nu aveți voie să discutați cu familia până se termină."
+
+# --- TECH_SUPPORT (call) ---
+- type: TECH_SUPPORT
+  flags: [RF_IMPERSONATION]
+  text: "Vă sun de la echipa de securitate {telco}. Monitorizăm conexiunea dvs. de internet."
+- type: TECH_SUPPORT
+  flags: [RF_THREAT]
+  text: "Routerul dvs. a fost spart, iar hackerii văd tot ce scrieți, inclusiv parolele."
+- type: TECH_SUPPORT
+  flags: [RF_REMOTE_ACCESS]
+  text: "Descărcați aplicația {remote_tool} de pe telefon, ca să pot vedea ecranul și să vă curăț aparatul."
+- type: TECH_SUPPORT
+  flags: [RF_DATA_REQUEST]
+  text: "Acum intrați în aplicația băncii și spuneți-mi ce sold vedeți, ca să verificăm că nu lipsesc bani."
+- type: TECH_SUPPORT
+  flags: [RF_CODE_REQUEST]
+  text: "Pe ecran apare un număr de nouă cifre lângă ID. Citiți-mi-l, vă rog."
+
+# --- ACCOUNT_TAKEOVER (chat from a known contact) ---
+- type: ACCOUNT_TAKEOVER
+  flags: [RF_CODE_REQUEST]
+  text: "Salut! Particip la un concurs și trebuie să mă votezi. Îți vine un cod prin SMS, trimite-mi-l și pe mine."
+- type: ACCOUNT_TAKEOVER
+  flags: [RF_CODE_REQUEST, RF_URGENCY]
+  text: "Mi s-a blocat WhatsApp-ul și codul de verificare a venit la tine. Dă-mi-l repede, te rog, până nu expiră."
+- type: ACCOUNT_TAKEOVER
+  flags: [RF_CODE_REQUEST, RF_EMOTIONAL_PRESSURE]
+  text: "Te rog mult, ești singura persoană care mă poate ajuta. Spune-mi doar codul acela de 6 cifre."
+
+# --- MARKETPLACE (chat) ---
+- type: MARKETPLACE
+  flags: [RF_CHANNEL_SWITCH]
+  text: "Aici pe site nu primesc notificări. Scrieți-mi pe Telegram, vă rog."
+- type: MARKETPLACE
+  flags: [RF_SUSPICIOUS_CONTACT, RF_DATA_REQUEST]
+  text: "Am plătit deja prin serviciul de livrare. Ca să primiți banii, introduceți datele cardului pe {fake_link}"
+- type: MARKETPLACE
+  flags: [RF_TOO_GOOD, RF_PAYMENT_REQUEST]
+  text: "Vă dau cu 300 de lei peste preț, dar plătiți dvs. taxa de transport de {amount}, v-o dau înapoi."
+
+# --- SAFE thread messages that sound like the scams above ---
+- type: NONE
+  flags: []
+  text: "Bună ziua, sunt de la {bank}. Vă sun pentru programarea pe care ați făcut-o la sucursală. Rămâne joi la ora 10?"
+- type: NONE
+  flags: []
+  text: "Sunt curierul de la {courier}, sunt la poarta dvs. cu coletul. Puteți ieși, vă rog?"
+- type: NONE
+  flags: []
+  text: "Ne vedem la 6 la stația de metrou. Aduc banii cash și verific {item} pe loc."
+- type: NONE
+  flags: []
+  text: "Pentru orice problemă cu cardul, sunați la numărul de pe spatele lui sau mergeți la sucursală."
+- type: NONE
+  flags: []
+  text: "Tehnicianul {telco} vine mâine între 9 și 12 să schimbe routerul. Nu trebuie să instalați nimic."
+- type: NONE
+  flags: []
+  text: "Am primit și eu un SMS ciudat cu un cod. L-am șters, nu l-am dat nimănui."
