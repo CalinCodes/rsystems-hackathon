@@ -52,3 +52,11 @@ it('extracts underscore and non-ASCII hosts as one token', () => {
   expect(extractUrls('vezi my_site.example.ro acum')).toEqual(['my_site.example.ro']);
   expect(extractUrls('vezi bancadunărea.ro acum')).toEqual(['bancadunărea.ro']);
 });
+
+import { canonicalize } from './normalize';
+
+it('canonicalize folds dots, invisibles and fullwidth forms but keeps Romanian letters', () => {
+  expect(canonicalize('a​b。c．d')).toBe('ab.c.d');
+  expect(canonicalize('ăâîșț')).toBe('ăâîșț');
+  expect(canonicalize('ă')).toBe('ă');
+});

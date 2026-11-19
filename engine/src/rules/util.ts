@@ -1,5 +1,5 @@
 import type { FlagCode, Hit, Scenario } from '@ss/contracts';
-import { normalizeText } from '../normalize';
+import { canonicalize, normalizeText } from '../normalize';
 
 export interface MsgCtx {
   n: number;
@@ -17,7 +17,12 @@ export interface RuleCtx {
 export type Rule = (c: RuleCtx) => Hit[];
 
 export function buildCtx(s: Scenario): RuleCtx {
-  const msgs = s.messages.map((m) => ({ n: m.n, from: m.from, raw: m.text, norm: normalizeText(m.text) }));
+  // raw is the canonical text (not the original) so evidence slices stay aligned with norm even when
+  // invisible characters were stripped out.
+  const msgs = s.messages.map((m) => {
+    const raw = canonicalize(m.text);
+    return { n: m.n, from: m.from, raw, norm: normalizeText(raw) };
+  });
   return { scenario: s, msgs };
 }
 

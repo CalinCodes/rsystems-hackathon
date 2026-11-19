@@ -7,9 +7,24 @@ export function stripDiacritics(text: string): string {
   return text.replace(/[ăâîșşțţ]/g, (c) => DIACRITICS[c] ?? c);
 }
 
+/**
+ * Fold the tricks that make text look different to a regex than to a human or a browser:
+ * NFKC (fullwidth letters/dots, compatibility forms), IDNA full stops (。 ｡) → ".", and removal of invisible
+ * format characters (zero-width space, soft hyphen, joiners, bidi marks) and leftover combining marks.
+ * WHY: "bancadunarea.ro​.evil.zzz" is the host bancadunarea.ro.evil.zzz in a browser, but a naive regex
+ * would stop at the invisible character and report the official-looking prefix.
+ * Real Romanian letters survive: NFKC recomposes a + breve into "ă" before stripdiacritics ever runs.
+ */
+export function canonicalize(text: string): string {
+  return text
+    .normalize('NFKC')
+    .replace(/[。｡]/g, '.')
+    .replace(/[\p{Cf}\p{M}]/gu, '');
+}
+
 /** Lowercase first so capital Ă/Â/Î/Ș/Ț are covered by the lowercase map. */
 export function normalizeText(text: string): string {
-  return stripDiacritics(text.toLowerCase());
+  return stripDiacritics(canonicalize(text).toLowerCase());
 }
 
 export interface Amount {
@@ -45,7 +60,7 @@ const CODE_RE = /(?<![\d+.,-])\d{4,8}(?![\d]|[.,]\d)/g;
 const trimTrailing = (s: string): string => s.replace(/[.,;:!?)\]]+$/, '');
 
 export function extractEmails(text: string): string[] {
-  return text.match(EMAIL_RE) ?? [];
+  return canonicalize(text).match(EMAIL_RE) ?? [];
 }
 
 const SCHEME_URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>"']+/gi;
@@ -60,7 +75,8 @@ const blank = (text: string, re: RegExp): string => text.replace(re, (m) => ' '.
  * contains an email-looking span, and blanking it first would hide the whole link.
  * Length-preserving blanking keeps match indexes so results stay in reading order.
  */
-export function extractUrls(text: string): string[] {
+export function extractUrls(raw: string): string[] {
+  const text = canonicalize(raw);
   const found: { index: number; url: string }[] = [];
   for (const m of text.matchAll(SCHEME_URL_RE)) found.push({ index: m.index ?? 0, url: m[0] });
   const noScheme = blank(text, SCHEME_URL_RE);

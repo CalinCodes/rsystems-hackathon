@@ -151,3 +151,28 @@ describe('second review round', () => {
     expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro'])).toEqual([]);
   });
 });
+
+describe('invisible-character and IDNA obfuscation', () => {
+  it('a zero-width space does not hide the real host', () => {
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro​.evil.zzz'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro­.evil.zzz'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('ideographic and fullwidth dots are read as dots', () => {
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea。ro。evil。zzz'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea．ro．evil．zzz'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('a stray combining mark does not hide the real host', () => {
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ró.evil.zzz'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('invisible characters inside the organisation name still count as naming it', () => {
+    expect(flags(['Banca Dun​ărea: intrați pe evil.xyz'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('invisible characters cannot hide a request phrase', () => {
+    expect(flags(['Spune​ți-mi codul primit'])).toContain('RF_CODE_REQUEST');
+  });
+  it('genuine Romanian text and the real site are unaffected', () => {
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro'])).toEqual([]);
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea​.ro'])).toEqual([]);
+    expect(flags(['Banca Dunărea: Codul de confirmare este 483920. Nu îl comunicați nimănui.'])).toEqual([]);
+  });
+});
