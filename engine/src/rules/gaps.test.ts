@@ -139,6 +139,11 @@ describe('6. impersonation', () => {
     expect(flagsOf(real)).not.toContain('RF_IMPERSONATION');
     expect(flagsOf(friend)).not.toContain('RF_IMPERSONATION');
   });
+  it('a masked unknown number ("+40 7xx xxx 123") counts as an unknown phone number', () => {
+    const s = thread([['sender', 'Sunteți printre câștigătorii campaniei MegaShop!']], { address: '+40 7xx xxx 123' });
+    expect(flagsOf(s)).toContain('RF_IMPERSONATION');
+    expect(flags('Sunteți printre câștigătorii campaniei MegaShop!', { address: 'xxx xxx' })).not.toContain('RF_IMPERSONATION');
+  });
   it('merely mentioning a platform or feature is not a claim to be it', () => {
     expect(flags('Am plătit prin Livrare Sigură, mai e disponibil?', { address: '+40 721 555 000' })).not.toContain('RF_IMPERSONATION');
     expect(flags('Îl vând pe PiațaMea, e disponibil', { address: '+40 721 555 000' })).not.toContain('RF_IMPERSONATION');
