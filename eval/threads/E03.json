@@ -1,0 +1,8 @@
+{
+  "id": "E03",
+  "channel": "sms",
+  "sender": { "name": "BancaDunarea", "address": "BancaDunarea", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Banca Dunărea: Ați primit 1.200 lei de la Ionescu Maria. Soldul este disponibil în aplicație." }
+  ]
+}

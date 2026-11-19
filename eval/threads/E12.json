@@ -1,0 +1,8 @@
+{
+  "id": "E12",
+  "channel": "whatsapp",
+  "sender": { "name": null, "address": "+40 7xx xxx 903", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Bună! Lucrez cu o platformă de investiții care dă 15% pe lună, garantat. Scrie-mi pe Telegram și îți arăt cum." }
+  ]
+}

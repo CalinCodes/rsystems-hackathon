@@ -3,8 +3,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ExpectedRow, FlagCode, Result, ScamType, Scenario, Verdict, Weights } from '@ss/contracts';
-import { analyze, loadWeights } from '@ss/engine';
+import type { ExpectedRow, FlagCode, Result, ScamType, Scenario, Verdict } from '@ss/contracts';
+import { analyze, loadWeights, type AnalyzeOptions, type Thresholds } from '@ss/engine';
 
 interface Scored {
   points: number;
@@ -48,7 +48,18 @@ function scoreOne(exp: ExpectedRow, got: Result, messageCount: number): Scored {
   return { points, max: alertApplies ? 7 : 5 };
 }
 
-async function runAll(scenarios: Scenario[], opts: { weights?: Weights }): Promise<Result[]> {
+const readJson = (rel: string): unknown => JSON.parse(readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8'));
+
+/** Flag codes the model added on top of rules, per id: tells which flag to blame when a row flips. */
+function printClfAdds(base: Result[], withClf: Result[]): void {
+  withClf.forEach((r, i) => {
+    const had = new Set(base[i]?.hits.map((h) => h.flag));
+    const added = [...new Set(r.hits.filter((h) => h.src === 'clf' && !had.has(h.flag)).map((h) => `${h.flag}@${h.msg}`))];
+    if (added.length > 0) console.log(`  ${r.id} clf added: ${added.join(' ')}`);
+  });
+}
+
+async function runAll(scenarios: Scenario[], opts: AnalyzeOptions): Promise<Result[]> {
   const out: Result[] = [];
   for (const s of scenarios) out.push(await analyze(s, opts));
   return out;
@@ -112,11 +123,18 @@ async function main(): Promise<void> {
   }
 
   if (flags.has('--ablation')) {
-    // STUB: rules+clf uses the stub weights (all probabilities 0) until the classifier is wired into analyze().
-    const stubPath = fileURLToPath(new URL('../contracts/weights.stub.json', import.meta.url));
-    const weights = loadWeights(JSON.parse(readFileSync(stubPath, 'utf8')));
-    const withClf = await runAll(scenarios, { weights });
-    report('rules+clf', scenarios, withClf, expected, false);
+    // Needs Ollama + bge-m3 on localhost:11434. Compares both cut sets from ml/train.py.
+    const weights = loadWeights(readJson('../ml/out/weights.json'));
+    for (const [label, file] of [['rules+clf p90', 'thresholds.json'], ['rules+clf p80', 'thresholds.p80.json']] as const) {
+      const thresholds = readJson(`../ml/out/${file}`) as Thresholds;
+      const withClf = await runAll(scenarios, { weights, thresholds });
+      if (withClf.some((r) => r.timingsMs.clfUnavailable === 1)) {
+        console.error(`[${label}] embedder unavailable: is Ollama running with bge-m3?`);
+        process.exit(1);
+      }
+      report(label, scenarios, withClf, expected, true);
+      printClfAdds(results, withClf);
+    }
   }
 }
 

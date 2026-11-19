@@ -1,0 +1,12 @@
+{
+  "id": "E04",
+  "channel": "chat",
+  "sender": { "name": "Cumpărător PiațaMea", "address": "user_30915", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Bună, mai aveți masa de bucătărie din anunț?" },
+    { "n": 2, "from": "reader", "text": "Da, o mai am." },
+    { "n": 3, "from": "sender", "text": "Super. Pot veni sâmbătă la 11 s-o văd? Plătesc cash, pe loc." },
+    { "n": 4, "from": "reader", "text": "Bine, vă aștept." },
+    { "n": 5, "from": "sender", "text": "Mulțumesc, ne vedem sâmbătă!" }
+  ]
+}

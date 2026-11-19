@@ -1,0 +1,12 @@
+{
+  "id": "E09",
+  "channel": "whatsapp",
+  "sender": { "name": "Dana (colegă)", "address": "+40 7xx xxx 120", "known_contact": true },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Salut, ce faci? 😊" },
+    { "n": 2, "from": "reader", "text": "Bine, tu?" },
+    { "n": 3, "from": "sender", "text": "Bine. Am încercat să intru în cont și codul a venit pe numărul tău din greșeală. Mi-l trimiți?" },
+    { "n": 4, "from": "reader", "text": "Ce cod?" },
+    { "n": 5, "from": "sender", "text": "Cel de 6 cifre din SMS, repede te rog, că expiră." }
+  ]
+}

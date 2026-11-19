@@ -41,6 +41,8 @@ const TOO_GOOD = re([
   String.raw`\bmostenire\b`,
   String.raw`\bdublam\b|\bsuma dublata\b`,
   String.raw`\blucr\w+ de acasa\b`,
+  // Easy money per day/hour ("primiti 150 lei pe zi"). Needs an earn verb: "parcarea costa 10 lei pe ora" is a price.
+  String.raw`\b(?:primiti|primesti|castigati|castigi|incasati|incasezi|faceti|faci)\b[^.!?;\n]{0,25}\d[\d.,]*\s*(?:lei|ron|euro?|€)\s+pe\s+(?:zi|ora|saptamana)\b`,
   String.raw`\bvesti (?:bune|minunate|excelente)\b`,
   String.raw`\b(?:va|vor) creste\b`,
   String.raw`\brambursar\w*|\brestituir\w*|\bdespagubir\w*`,

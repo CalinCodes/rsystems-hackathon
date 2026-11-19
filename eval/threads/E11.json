@@ -1,0 +1,16 @@
+{
+  "id": "E11",
+  "channel": "call_transcript",
+  "sender": { "name": null, "address": "+40 2xx xxx 517", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Bună ziua, sunt comisarul Marinescu, de la Poliția Capitalei." },
+    { "n": 2, "from": "reader", "text": "Bună ziua." },
+    { "n": 3, "from": "sender", "text": "Nu vă speriați, nu ați greșit cu nimic. Investigăm o rețea de hoți din cartierul dumneavoastră." },
+    { "n": 4, "from": "reader", "text": "Doamne. Și ce legătură am eu?" },
+    { "n": 5, "from": "sender", "text": "Știm că vor să vă fure economiile din bancă săptămâna aceasta. Ne puteți ajuta să-i prindem." },
+    { "n": 6, "from": "reader", "text": "Cum să vă ajut?" },
+    { "n": 7, "from": "sender", "text": "Scoateți azi toți banii și dați-i colegului meu, care vine la dumneavoastră acasă. Nu spuneți nimănui, nici la bancă." },
+    { "n": 8, "from": "reader", "text": "Bine..." },
+    { "n": 9, "from": "sender", "text": "Vă sun din nou la ora 15 să vedem cum a mers." }
+  ]
+}

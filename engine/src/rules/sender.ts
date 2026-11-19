@@ -4,8 +4,13 @@ import { ORGS, isOfficialHost, type Org } from './contact';
 
 type Sender = Scenario['sender'];
 
+// "x" is a masked digit ("+40 7xx xxx 904"): datasets hide numbers this way and it is still a phone number.
+// A masked number can never equal a catalog number, so it never vouches for an organisation.
 export const isPhoneNumber = (address: string | null): boolean =>
-  address !== null && /^[+\d\s().-]+$/.test(address) && address.replace(/\D/g, '').length >= 9;
+  address !== null &&
+  /^[+\dxX\s().-]+$/.test(address) &&
+  address.replace(/[^\dxX]/g, '').length >= 9 &&
+  address.replace(/\D/g, '').length >= 3;
 
 /**
  * The WHOLE address as one national-form number ("+40 800 500 600" -> "0800500600"), or null if it is not exactly one.

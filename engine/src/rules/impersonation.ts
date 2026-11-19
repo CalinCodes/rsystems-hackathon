@@ -36,6 +36,8 @@ const claimRegexes = new Map<Org, RegExp>(
         String.raw`\b${o.nameSrc}\b[^.!?;\n]{0,15}\b(?:va\s+)?(?:informeaza|anunta|contacteaza|notifica|solicita|invita|comunica|multumeste|reaminteste)\b`,
         String.raw`\b(?:sunt|suntem|ma numesc|va (?:suna|contactez|scriu|apelez)|va apelam)\b[^.!?;\n]{0,50}\b(?:de la|din partea|reprezentant\w*|lucrez la|lucrez pentru)\s+${o.nameSrc}\b`,
         String.raw`\b(?:din partea|in numele|echipa|departamentul|serviciul)\s+(?:de\s+)?${o.nameSrc}\b`,
+        // Announcing the org's own draw or campaign speaks for the org; prize scams borrow a brand this way.
+        String.raw`\b(?:tombol\w*|concurs\w*|campani\w*|promoti\w*|loteri\w*|extrager\w*)\s+(?:organizat\w*\s+de\s+)?${o.nameSrc}\b`,
       ].join('|'),
     ),
   ]),

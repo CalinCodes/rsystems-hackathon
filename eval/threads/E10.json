@@ -1,0 +1,11 @@
+{
+  "id": "E10",
+  "channel": "chat",
+  "sender": { "name": "Cumpărător PiațaMea", "address": "buyer_58210", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "Mai este de vânzare aspiratorul?" },
+    { "n": 2, "from": "reader", "text": "Da." },
+    { "n": 3, "from": "sender", "text": "Îl iau. Hai să vorbim pe WhatsApp, aici intru rar." },
+    { "n": 4, "from": "sender", "text": "Am făcut plata prin curier. Ca să încasați banii, confirmați datele cardului pe piatamea-incasari.com." }
+  ]
+}

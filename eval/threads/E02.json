@@ -1,0 +1,8 @@
+{
+  "id": "E02",
+  "channel": "sms",
+  "sender": { "name": null, "address": "+40 7xx xxx 210", "known_contact": false },
+  "messages": [
+    { "n": 1, "from": "sender", "text": "CurierExpres: Pachetul dvs. așteaptă în depozit. Pentru eliberare, plătiți 4,50 lei pe curierexpres-depozit.top în 48 de ore." }
+  ]
+}

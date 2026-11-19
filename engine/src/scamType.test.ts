@@ -14,6 +14,9 @@ describe('type decision list', () => {
   it('bank phishing', async () => {
     expect(await typeOf('Banca Dunărea: Cardul dvs. a fost blocat. Accesați în 2 ore: bancadunarea-securizat.example')).toBe('BANK_IMPERSONATION');
   });
+  it('bank named in an inflected form ("Băncii") still reads as a bank story', async () => {
+    expect(await typeOf('Sunt Radu, de la serviciul clienți al Băncii Dunărea. Spuneți-mi codul din SMS.')).toBe('BANK_IMPERSONATION');
+  });
   it('courier fee', async () => {
     expect(await typeOf('CurierExpres: Coletul dvs. nu poate fi livrat. Plătiți taxa de 9,99 lei: curierexpres-colet.example')).toBe('COURIER_FEE');
   });
