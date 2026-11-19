@@ -1,5 +1,6 @@
 import type { Result, Scenario } from '@ss/contracts';
 import { ChatThread } from './ChatThread';
+import { ExtrasBar } from './ExtrasBar';
 import { RiskMeter } from './RiskMeter';
 import { WarningCard } from './WarningCard';
 import type { Lang } from './lang';
@@ -33,6 +34,7 @@ export function DetailView({ scenario, result, lang, onLang, onBack }: DetailVie
         {result.verdict !== 'SAFE' && <p className="text-xl text-ink/70">{scamTypeLabel(result.scamType)}</p>}
       </header>
       <WarningCard warning={result.warning} lang={lang} onLang={onLang} />
+      <ExtrasBar result={result} />
       <section className="flex flex-col gap-4" aria-label="Riscul în timp">
         <RiskMeter score={score} />
         {total > 1 && (

@@ -1,5 +1,6 @@
 import type { Result, Scenario } from '@ss/contracts';
 import { motion, useReducedMotion } from 'framer-motion';
+import { ExtrasBar } from './ExtrasBar';
 import { flagLabel } from './flags';
 import { ThreadView } from './ThreadView';
 import { Timeline } from './Timeline';
@@ -30,6 +31,7 @@ export function ResultCard({ result, messages, lang, onLang }: ResultCardProps) 
         <span aria-hidden="true">{look.icon}</span> {look.word}
       </h2>
       <WarningCard warning={result.warning} lang={lang} onLang={onLang} />
+      <ExtrasBar result={result} />
       <div className="flex flex-col gap-2 text-ink/70">
         <p>
           {result.verdict === 'SAFE' ? 'Niciun semn de alarmă' : scamTypeLabel(result.scamType)} · Scor{' '}
