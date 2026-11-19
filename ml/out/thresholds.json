@@ -1,0 +1,80 @@
+{
+  "RF_CHANNEL_SWITCH": {
+    "precision": 0.909,
+    "recall": 0.32,
+    "templates": 6,
+    "threshold": 0.54
+  },
+  "RF_CODE_REQUEST": {
+    "precision": 0.432,
+    "recall": 0.352,
+    "templates": 5,
+    "threshold": null
+  },
+  "RF_DATA_REQUEST": {
+    "precision": 0.905,
+    "recall": 0.47,
+    "templates": 10,
+    "threshold": 0.6
+  },
+  "RF_EMOTIONAL_PRESSURE": {
+    "precision": 0.903,
+    "recall": 0.464,
+    "templates": 7,
+    "threshold": 0.73
+  },
+  "RF_IMPERSONATION": {
+    "precision": 0.903,
+    "recall": 0.174,
+    "templates": 21,
+    "threshold": 0.82
+  },
+  "RF_NEW_NUMBER": {
+    "precision": 1.0,
+    "recall": 0.986,
+    "templates": 7,
+    "threshold": 0.5
+  },
+  "RF_PAYMENT_REQUEST": {
+    "precision": 0.902,
+    "recall": 0.896,
+    "templates": 30,
+    "threshold": 0.5
+  },
+  "RF_REMOTE_ACCESS": {
+    "precision": 1.0,
+    "recall": 0.123,
+    "templates": 3,
+    "threshold": 0.5
+  },
+  "RF_SECRECY": {
+    "precision": 0.903,
+    "recall": 0.505,
+    "templates": 6,
+    "threshold": 0.66
+  },
+  "RF_SUSPICIOUS_CONTACT": {
+    "precision": 0.903,
+    "recall": 0.619,
+    "templates": 18,
+    "threshold": 0.64
+  },
+  "RF_THREAT": {
+    "precision": 0.917,
+    "recall": 0.111,
+    "templates": 6,
+    "threshold": 0.68
+  },
+  "RF_TOO_GOOD": {
+    "precision": 0.937,
+    "recall": 0.821,
+    "templates": 17,
+    "threshold": 0.5
+  },
+  "RF_URGENCY": {
+    "precision": 0.924,
+    "recall": 0.217,
+    "templates": 26,
+    "threshold": 0.83
+  }
+}

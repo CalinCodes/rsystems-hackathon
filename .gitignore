@@ -4,5 +4,6 @@ ml/.venv
 ml/__pycache__
 ml/.pytest_cache
 ml/out/dataset.jsonl
+ml/out/emb_cache.npz
 data/
 *.local.*
