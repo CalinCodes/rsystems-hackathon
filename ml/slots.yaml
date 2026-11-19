@@ -1,12 +1,29 @@
-# Fictional organisations/values only.
-bank: [Banca Dunărea, BancaDunarea]
-courier: [CurierExpres, Curier Express]
-shop: [MegaShop, PiațaMea]
-authority: [ANAF, Poliția Rutieră]
+# Fictional organisations/values only. Never a real brand, link, or phone number.
+# Slots are filled by generator.py into templates/*.yaml.
+
+bank: [Banca Dunărea, BancaDunarea, Banca Carpați]
+courier: [CurierExpres, Curier Express, PoștaRapidă]
+shop: [MegaShop, PiațaMea, TargulOnline]
+authority: [ANAF, Poliția Rutieră, Primăria Sectorului 3]
+telco: [NetSpeed, TelefonulTău]
+
 official_link: [bancadunarea.ro, curierexpres.ro, megashop.ro, anaf.ro]
-fake_link: [bancadunarea-securizat.example, curierexpres-colet.example, megashop-premii.example]
-deadline: [24 de ore, 2 ore, 30 de minute]
-amount: [150 lei, 2.500 lei, 9,99 lei]
-code: ["483920", "117204", "902561"]
+fake_link:
+  - bancadunarea-securizat.example
+  - curierexpres-colet.example
+  - megashop-premii.example
+  - anaf-plata.example
+  - suport-netspeed.example
+
+deadline: [24 de ore, 2 ore, 30 de minute, 48 de ore]
+amount: [150 lei, 2.500 lei, 9,99 lei, 49 lei]
+code: ["483920", "117204", "902561", "774108"]
 family_name: [Andrei, Mihai, Elena]
-phone_unknown: ["+40 700 000 111", "+40 700 000 222"]
+phone_unknown: ["+40 700 000 111", "+40 700 000 222", "+40 700 000 333"]
+
+# Fictional first names used in neutral / SAFE texts.
+first_name: [Ana, Radu, Ioana, George]
+# Real-looking item names for marketplace.
+item: [canapea, bicicletă, telefon, frigider]
+# Generic session data the tech-support scam asks for.
+remote_tool: [AnyDesk, TeamViewer]

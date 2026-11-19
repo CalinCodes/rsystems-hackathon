@@ -1,6 +1,8 @@
 node_modules
 dist
 ml/.venv
+ml/__pycache__
+ml/.pytest_cache
 ml/out/dataset.jsonl
 data/
 *.local.*
