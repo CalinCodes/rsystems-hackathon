@@ -126,7 +126,7 @@ describe('6. impersonation', () => {
   it('...but not when the sender id names the org, or the number is a known contact', () => {
     // (A shop whose name matches but texts from a private MOBILE is still flagged by the contact rule; this test is about
     // the impersonation rule on its own, so the named sender uses a non-numeric id.)
-    const named = thread([['sender', 'MegaShop: comanda dvs. a fost expediată']], { name: 'MegaShop', address: 'MegaShop-SMS' });
+    const named = thread([['sender', 'MegaShop: comanda dvs. a fost expediată']], { name: 'MegaShop', address: 'MegaShop' });
     const known = thread([['sender', 'MegaShop: comanda dvs. a fost expediată']], { address: '+40 721 555 000', known_contact: true });
     expect(flagsOf(named)).not.toContain('RF_IMPERSONATION');
     expect(flagsOf(known)).not.toContain('RF_IMPERSONATION');
@@ -269,5 +269,22 @@ describe('review round 3: only the ADDRESS vouches, and only whole-address match
   it('official link plus the catalog phone and e-mail is still exempt', () => {
     expect(flags('Intrați în contul de bancă pe bancadunarea.ro sau sunați la 0800 100 200')).not.toContain('RF_DATA_REQUEST');
     expect(flags('Intrați în contul de bancă pe bancadunarea.ro, scrieți la suport@bancadunarea.ro')).not.toContain('RF_DATA_REQUEST');
+  });
+});
+
+describe('review round 4: an alphanumeric sender id must BE the name, not contain it', () => {
+  const login = 'Intrați în contul Banca Dunărea și confirmați';
+  it.each(['BancaDunarea', 'BANCADUNAREA', 'Banca Dunarea'])('verifies the exact id "%s"', (id) => {
+    expect(flags(login, { address: id })).not.toContain('RF_DATA_REQUEST');
+  });
+  it.each(['BancaDunarea-Alerte', 'Fake BancaDunarea', 'BancaDunarea 0721555000', 'BancaDunarea.xyz', 'MegaShop'])(
+    'does not verify "%s" as the bank',
+    (id) => {
+      expect(flags(login, { address: id })).toContain('RF_DATA_REQUEST');
+    },
+  );
+  it('a shop id that merely contains the name does not clear impersonation from a phone-looking id', () => {
+    const s = thread([['sender', 'MegaShop: comanda dvs. a fost expediată']], { address: '0721 555 000' });
+    expect(flagsOf(s)).toContain('RF_IMPERSONATION');
   });
 });

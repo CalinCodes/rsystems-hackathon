@@ -38,8 +38,20 @@ export function senderIsOrg(s: Sender, org: Org): boolean {
     const domain = address.toLowerCase().slice(address.lastIndexOf('@') + 1);
     return domain !== '' && isOfficialHost(domain, org.site);
   }
-  return org.nameRe.test(normalizeText(address));
+  return wholeIdRegex(org).test(normalizeText(address).trim());
 }
 
-/** True when the sender is verifiably ANY catalog organisation. */
-export const senderIsAnyOrg = (s: Sender): boolean => ORGS.some((o) => senderIsOrg(s, o));
+/**
+ * The sender id must BE the organisation's name, not merely contain it: "MegaShop-Premii", "MegaShop 0721 555 000" and
+ * "Fake MegaShop" all contain the name and none of them is the shop. Space/case tolerant ("Banca Dunarea", "BANCADUNAREA").
+ */
+const wholeIdCache = new Map<Org, RegExp>();
+function wholeIdRegex(org: Org): RegExp {
+  let re = wholeIdCache.get(org);
+  if (!re) {
+    re = new RegExp(`^${org.nameSrc}$`);
+    wholeIdCache.set(org, re);
+  }
+  return re;
+}
+
