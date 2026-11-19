@@ -131,6 +131,14 @@ describe('6. impersonation', () => {
     expect(flagsOf(named)).not.toContain('RF_IMPERSONATION');
     expect(flagsOf(known)).not.toContain('RF_IMPERSONATION');
   });
+  it("announcing a catalog org's draw or campaign from an unknown number is a claim", () => {
+    const fake = thread([['sender', 'Sunteți printre câștigătorii campaniei MegaShop! Sunați-ne pentru detalii.']], { address: '+40 721 555 000' });
+    const real = thread([['sender', 'Sunteți printre câștigătorii campaniei MegaShop! Detalii în aplicație.']], { name: 'MegaShop', address: 'MegaShop' });
+    const friend = thread([['sender', 'Am câștigat la extragerea CurierExpres, ce noroc!']], { address: '+40 721 555 000', known_contact: true });
+    expect(flagsOf(fake)).toContain('RF_IMPERSONATION');
+    expect(flagsOf(real)).not.toContain('RF_IMPERSONATION');
+    expect(flagsOf(friend)).not.toContain('RF_IMPERSONATION');
+  });
   it('merely mentioning a platform or feature is not a claim to be it', () => {
     expect(flags('Am plătit prin Livrare Sigură, mai e disponibil?', { address: '+40 721 555 000' })).not.toContain('RF_IMPERSONATION');
     expect(flags('Îl vând pe PiațaMea, e disponibil', { address: '+40 721 555 000' })).not.toContain('RF_IMPERSONATION');
