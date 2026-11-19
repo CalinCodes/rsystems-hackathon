@@ -6,6 +6,7 @@
   "scripts": {
     "eval": "tsx eval/eval.ts",
     "robust": "tsx eval/robustness.ts",
+    "tunnel": "tsx scripts/tunnel.ts",
     "warnings": "tsx engine/scripts/buildWarnings.ts",
     "build:extension": "tsx extension/build.ts",
     "test": "vitest run",

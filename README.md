@@ -22,6 +22,21 @@ Quick check on the bundled fixtures:
 npm run eval -- contracts/fixtures contracts/fixtures/expected.csv
 ```
 
+## Open the app from anywhere (Cloudflare tunnel)
+
+```bash
+winget install --id Cloudflare.cloudflared -e   # once (macOS: brew install cloudflared)
+npm run tunnel                                  # add -- --no-build to skip the build
+```
+
+It builds the app, serves it on `127.0.0.1:4173` and prints a temporary `https://<random>.trycloudflare.com`
+address that works on any phone or laptop. Ctrl+C stops it; the address changes on every start.
+
+- Only the app's files travel through the tunnel. Messages are still checked inside the visitor's own browser.
+- Ollama is **not** tunnelled. A visitor's browser has no model of its own, so it checks with rules only. On this
+  laptop the model still works as usual.
+- Anyone with the address can open the app while the tunnel runs. Stop it when the demo is over.
+
 ## Data
 
 Real validation/test scenarios live **outside** the repo (e.g. `~/scam-data/`). Never copy them in,
