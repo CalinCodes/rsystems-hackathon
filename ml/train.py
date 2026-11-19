@@ -39,6 +39,9 @@ OLLAMA_EMBED_URL = "http://localhost:11434/api/embed"
 BATCH = 32
 N_FOLDS = 5
 MIN_PRECISION = 0.9
+# A missed scam costs the team about twice what a false alarm does (brief scoring),
+# so a looser cut set is exported too; the engine's validation eval picks one.
+LOOSE_PRECISION = 0.8
 # Cuts below 0.5 are never offered: they would fire on coin-flip outputs.
 CUT_GRID = [round(0.5 + 0.01 * i, 2) for i in range(50)]
 
@@ -46,6 +49,7 @@ HERE = Path(__file__).resolve().parent
 DATASET_PATH = HERE / "out" / "dataset.jsonl"
 WEIGHTS_PATH = HERE / "out" / "weights.json"
 THRESHOLDS_PATH = HERE / "out" / "thresholds.json"
+THRESHOLDS_LOOSE_PATH = HERE / "out" / "thresholds.p80.json"
 CACHE_PATH = HERE / "out" / "emb_cache.npz"
 
 # Must equal ALL_FLAGS in contracts/constants.ts.
@@ -173,16 +177,20 @@ def type_cv_accuracy(X: np.ndarray, types: list[str], folds) -> float:
     return hits / len(t)
 
 
-def safe_false_alarm_rate(rows: list[dict], oof: dict[str, np.ndarray], cuts: dict) -> float:
-    """Share of SAFE rows where any flag fires at its chosen cut. This is the number
-    that matters most for elderly users: a false alarm on a real bank SMS."""
-    safe = np.array([r["type"] == "NONE" for r in rows])
-    fired = np.zeros(len(rows), dtype=bool)
+def any_fire_rate(oof: dict[str, np.ndarray], cuts: dict, mask: np.ndarray) -> float:
+    """Share of masked rows where at least one flag fires at its cut. On SAFE rows this
+    is the false-alarm rate (a warning on a real bank SMS); on flagged scam rows it is
+    how often the classifier catches something at all."""
+    fired = np.zeros(len(mask), dtype=bool)
     for flag, p in oof.items():
         cut = cuts[flag]["threshold"]
         if cut is not None:
             fired |= p >= cut
-    return float(fired[safe].mean()) if safe.any() else 0.0
+    return float(fired[mask].mean()) if mask.any() else 0.0
+
+
+def fmt(cut: float | None) -> str:
+    return f"{cut:.2f}" if cut is not None else " none"
 
 
 def main() -> None:
@@ -194,9 +202,11 @@ def main() -> None:
 
     flags: dict[str, dict] = {}
     cuts: dict[str, dict] = {}
+    loose: dict[str, dict] = {}
     oof: dict[str, np.ndarray] = {}
     safe = np.array([r["type"] == "NONE" for r in rows])
-    print(f"{'flag':24s} {'tpl':>3s} {'cut':>5s} {'prec':>5s} {'rec':>5s} {'safeFA':>6s}")
+    flagged = np.array([bool(r["flags"]) for r in rows])
+    print(f"{'flag':24s} {'tpl':>3s} {'cut':>5s} {'prec':>5s} {'rec':>5s} {'safeFA':>6s}   p80: cut  rec")
     for flag in ALL_FLAGS:
         y = np.array([1 if flag in r["flags"] else 0 for r in rows])
         n_tpl = len({r["template_id"] for r in rows if flag in r["flags"]})
@@ -207,16 +217,19 @@ def main() -> None:
         flags[flag] = {"w": clf.coef_[0].tolist(), "b": float(clf.intercept_[0])}
         oof[flag] = oof_proba(X, y, folds)
         cuts[flag] = {**pick_threshold(y, oof[flag]), "templates": n_tpl}
-        c = cuts[flag]
-        cut_s = f"{c['threshold']:.2f}" if c["threshold"] is not None else " none"
+        loose[flag] = {**pick_threshold(y, oof[flag], LOOSE_PRECISION), "templates": n_tpl}
+        c, lc = cuts[flag], loose[flag]
         # SAFE rows this flag alone would wrongly fire on: shows where SAFE templates are thin.
         fa = int((oof[flag][safe] >= c["threshold"]).sum()) if c["threshold"] is not None else 0
-        print(f"{flag:24s} {n_tpl:3d} {cut_s:>5s} {c['precision']:5.2f} {c['recall']:5.2f} {fa:6d}")
+        print(f"{flag:24s} {n_tpl:3d} {fmt(c['threshold']):>5s} {c['precision']:5.2f} "
+              f"{c['recall']:5.2f} {fa:6d}   {fmt(lc['threshold']):>8s} {lc['recall']:4.2f}")
 
     types = [r["type"] for r in rows]
     type_clf = fit_type(X, types)
     print(f"\ntype CV accuracy={type_cv_accuracy(X, types, folds):.2f} over {len(set(types))} classes")
-    print(f"SAFE false-alarm rate at chosen cuts={safe_false_alarm_rate(rows, oof, cuts):.3f}")
+    for name, cs in (("p90", cuts), ("p80", loose)):
+        print(f"{name}: SAFE false-alarm rate={any_fire_rate(oof, cs, safe):.3f}  "
+              f"flagged rows caught={any_fire_rate(oof, cs, flagged):.3f}")
 
     weights = {
         "model": EMBED_MODEL, "dim": EMBED_DIM, "flags": flags,
@@ -225,7 +238,9 @@ def main() -> None:
     WEIGHTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     WEIGHTS_PATH.write_text(json.dumps(weights), encoding="utf-8")
     THRESHOLDS_PATH.write_text(json.dumps(cuts, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(f"\nwrote {WEIGHTS_PATH.name} ({len(flags)} flags) and {THRESHOLDS_PATH.name}")
+    THRESHOLDS_LOOSE_PATH.write_text(json.dumps(loose, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(f"\nwrote {WEIGHTS_PATH.name} ({len(flags)} flags), "
+          f"{THRESHOLDS_PATH.name}, {THRESHOLDS_LOOSE_PATH.name}")
 
 
 if __name__ == "__main__":

@@ -7,7 +7,9 @@ shop: [MegaShop, PiațaMea, TargulOnline]
 authority: [ANAF, Poliția Rutieră, Primăria Sectorului 3]
 telco: [NetSpeed, TelefonulTău]
 
-official_link: [bancadunarea.ro, curierexpres.ro, megashop.ro, anaf.ro]
+# Must stay a subset of contracts/catalog.json sites: a SAFE row with a non-official
+# link would teach the model that unofficial links are fine.
+official_link: [bancadunarea.ro, curierexpres.ro, megashop.ro, anaf.ro, piatamea.ro]
 fake_link:
   - bancadunarea-securizat.example
   - curierexpres-colet.example

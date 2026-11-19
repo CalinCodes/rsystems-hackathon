@@ -43,6 +43,17 @@ def test_safe_rows_carry_no_flags():
             assert row["flags"] == [], row
 
 
+def test_official_links_are_catalog_sites():
+    import yaml
+
+    root = g.HERE.parent
+    catalog = json.loads((root / "contracts" / "catalog.json").read_text(encoding="utf-8"))
+    sites = {o["site"] for o in catalog["organisations"]}
+    slots = yaml.safe_load(g.SLOTS_PATH.read_text(encoding="utf-8"))
+    assert set(slots["official_link"]) <= sites
+    assert not set(slots["fake_link"]) & sites
+
+
 def test_rows_are_json_serializable():
     for row in g.generate()[:5]:
         json.loads(json.dumps(row, ensure_ascii=False))

@@ -73,6 +73,7 @@ def test_export_matches_weights_contract(tmp_path, monkeypatch):
     monkeypatch.setattr(t, "DATASET_PATH", dataset)
     monkeypatch.setattr(t, "WEIGHTS_PATH", tmp_path / "weights.json")
     monkeypatch.setattr(t, "THRESHOLDS_PATH", tmp_path / "thresholds.json")
+    monkeypatch.setattr(t, "THRESHOLDS_LOOSE_PATH", tmp_path / "thresholds.p80.json")
     monkeypatch.setattr(t, "CACHE_PATH", tmp_path / "emb_cache.npz")
     monkeypatch.setattr(t, "embed", _fake_embed)
 
@@ -90,6 +91,15 @@ def test_export_matches_weights_contract(tmp_path, monkeypatch):
     cuts = json.loads((tmp_path / "thresholds.json").read_text())
     assert set(cuts) == {"RF_CODE_REQUEST"}
     assert {"threshold", "precision", "recall", "templates"} <= set(cuts["RF_CODE_REQUEST"])
+    loose = json.loads((tmp_path / "thresholds.p80.json").read_text())
+    assert set(loose) == set(cuts)
+
+
+def test_any_fire_rate_counts_rows_with_any_flag_over_cut():
+    oof = {"A": np.array([0.9, 0.1, 0.1]), "B": np.array([0.1, 0.1, 0.8])}
+    cuts = {"A": {"threshold": 0.5}, "B": {"threshold": None}}
+    # B has no safe cut, so only A counts: row 0 fires, rows 1 and 2 don't.
+    assert t.any_fire_rate(oof, cuts, np.array([True, True, True])) == 1 / 3
 
 
 def test_cache_returns_same_vectors(tmp_path, monkeypatch):
