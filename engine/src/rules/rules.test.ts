@@ -241,3 +241,25 @@ describe('BOM is a character, not a separator', () => {
     expect(flags(['Ne vedem mâine﻿ la cafea'])).toEqual([]);
   });
 });
+
+describe('hosts are found by character class, not by separators', () => {
+  const claimed = (url: string): FlagCode[] => flags([`Banca Dunărea: intrați pe ${url}`]);
+  it.each([
+    ['link=bancadunarea.r‍o'],
+    ['bancadunarea.r‍o\login'],
+    ['[bancadunarea.r‍o]'],
+    ['{bancadunarea.r‍o}'],
+    ['«bancadunarea.r‍o»'],
+    ['“bancadunarea.r‍o”'],
+    ['x|bancadunarea.r‍o'],
+    ['*bancadunarea.r‍o*'],
+    ['url:bancadunarea.ro﻿.evil.zzz'],
+  ])('flags %s', (url) => {
+    expect(claimed(url)).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('clean hosts behind the same separators are fine', () => {
+    expect(claimed('link=bancadunarea.ro')).toEqual([]);
+    expect(claimed('[bancadunarea.ro]')).toEqual([]);
+    expect(claimed('«bancadunarea.ro»')).toEqual([]);
+  });
+});

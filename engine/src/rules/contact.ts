@@ -54,7 +54,8 @@ const isOfficialHost = (host: string, site: string): boolean => host === site ||
 
 const claimedIn = (text: string): Org[] => ORGS.filter((o) => o.nameRe.test(text));
 
-const HOSTISH = /^[\p{L}\p{N}\p{M}\p{Cf}_@+%-]+(?:[.。．｡][\p{L}\p{N}\p{M}\p{Cf}_@+%-]+)+$/u;
+// NFKC already folds U+FF0E to "." and U+FF61 to U+3002, so those two are the only dot lookalikes left to match.
+const HOST_RUN = /[\p{L}\p{N}\p{M}\p{Cf}_@+%-]+(?:[.。][\p{L}\p{N}\p{M}\p{Cf}_@+%-]+)+/gu;
 const INVISIBLE = /[\p{Cf}\p{M}]/u;
 
 /**
@@ -64,19 +65,11 @@ const INVISIBLE = /[\p{Cf}\p{M}]/u;
  * (NFKC first, so a decomposed Romanian "ă" = a + breve is recomposed and does not trigger this.)
  */
 function obfuscatedHostToken(orig: string): string | null {
-  // Split on brackets/quotes/commas too, so "(host)" and "pe,host" don't hide a host inside a bigger token.
-  // [^\S﻿] = whitespace EXCEPT the BOM: JS \s matches U+FEFF, which is also an invisible format character,
-  // so splitting on plain \s would cut a tampered host in half and leave two clean-looking pieces.
-  for (const tok of orig.split(/(?:[^\S﻿]|[<>"'(),;])+/)) {
-    const nfkc = tok.normalize('NFKC');
-    // Only the authority matters: drop any scheme (even glued to a prefix like "pe:https://"), then cut at the path.
-    const afterScheme = nfkc.includes('://') ? nfkc.slice(nfkc.indexOf('://') + 3) : nfkc;
-    const authority = afterScheme.split(/[/?#]/)[0] ?? '';
-    // ":" separates host from port ("host:8080") and from stray prefixes ("pe:host"): test each piece.
-    for (const part of authority.split(':')) {
-      const t = part.replace(/^\p{P}+|\p{P}+$/gu, '');
-      if (HOSTISH.test(t) && INVISIBLE.test(t)) return t;
-    }
+  // Scan for runs of host characters instead of splitting on a list of separators: a host then ends at ANY
+  // character outside the class ("=", "\", "[", "|", quotes, "/", ":"...), so no separator can be used to
+  // hide it, and the BOM (a format character) is part of the run rather than a cut point.
+  for (const m of orig.normalize('NFKC').matchAll(HOST_RUN)) {
+    if (INVISIBLE.test(m[0])) return m[0];
   }
   return null;
 }
