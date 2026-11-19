@@ -1,6 +1,6 @@
 import { bannerSignature, spokenText, type BannerModel } from './banner';
 import { localVoice, speak, stopSpeaking } from './speech';
-import { button, layer, leave, node, reducedMotion } from './ui';
+import { button, layer, leave, node, reducedMotion, thiefImg } from './ui';
 
 export interface BannerHandlers {
   /** Which chat and verdict this banner belongs to: part of the redraw key, so handlers never go stale. */
@@ -23,7 +23,7 @@ function bannerCard(m: BannerModel, h: BannerHandlers, escalate: boolean): HTMLE
   box.setAttribute('role', m.tone === 'info' ? 'status' : 'alert');
   box.setAttribute('aria-label', 'Scam Shield');
   const head = node('p', 'headline');
-  head.append(node('span', 'icon', m.icon), node('span', '', m.headline));
+  head.append(thiefImg(m.tone === 'scam' ? 'caught' : 'peek'), node('span', 'icon', m.icon), node('span', '', m.headline));
   const action = node('p', 'action');
   action.append(node('b', '', 'Ce să faceți'), document.createTextNode(m.action));
   const row = node('div', 'row');

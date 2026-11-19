@@ -47,8 +47,11 @@ export function PasteForm({ busy, onCheck, onInvalidFile }: PasteFormProps) {
       <button
         type="submit"
         disabled={text.trim() === '' || busy}
-        className="min-h-20 w-full rounded-card bg-ink px-6 text-2xl font-semibold text-surface shadow-soft disabled:opacity-50"
+        className="group min-h-20 w-full rounded-card bg-linear-to-br from-night to-night-2 px-6 text-2xl font-semibold text-surface shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 disabled:translate-y-0 disabled:opacity-50"
       >
+        <span aria-hidden="true" className="mr-2 inline-block transition-transform duration-300 group-hover:rotate-12">
+          🛡️
+        </span>
         Verifică mesajul
       </button>
       <div className="flex flex-wrap gap-3">
