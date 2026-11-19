@@ -19,13 +19,13 @@ export function Timeline({ scores, firstAlert }: TimelineProps) {
                 style={{ height: `${Math.max(4, s)}px` }}
                 title={`Mesajul ${n}: risc ${s}`}
               />
-              <span className="text-sm">{n}</span>
+              <span>{n}</span>
             </li>
           );
         })}
       </ol>
       {firstAlert !== null && (
-        <p className="mt-1 text-sm">Cercul arată mesajul la care am început să vă avertizăm.</p>
+        <p className="mt-1">Cercul arată mesajul la care am început să vă avertizăm.</p>
       )}
     </div>
   );

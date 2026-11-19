@@ -8,6 +8,7 @@
   --color-suspicious: #b7791f;
   --color-scam: #c0392b;
   --radius-card: 18px;
+  --shadow-soft: 0 12px 40px -16px rgb(42 33 24 / 0.22);
   --font-heading: "Fraunces", serif;
   --font-body: "Source Sans 3", sans-serif;
 }
