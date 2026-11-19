@@ -3,7 +3,7 @@ import { loadPager, savePager } from './pagerStore';
 
 const PROBLEM_RO: Record<PagerProblem, string> = {
   server: 'Adresa serverului nu este corectă (de ex. http://192.168.1.20:8090).',
-  not_local: 'Serverul trebuie să fie în rețeaua de acasă, nu pe internet.',
+  not_local: 'Folosiți https://ntfy.sh sau un server ntfy din rețeaua de acasă.',
   topic: 'Subiectul poate avea doar litere, cifre, - și _ (maxim 64).',
   name: 'Scrieți un nume scurt (maxim 40 de caractere).',
 };

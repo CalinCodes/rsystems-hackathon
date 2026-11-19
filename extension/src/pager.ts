@@ -5,18 +5,21 @@ import type { Result, ScamType } from '@ss/contracts';
  *
  * Privacy: the alert carries the reader's name (typed by them in the options page), the scam type in plain words
  * and the time. NEVER message text, the sender's number or the chat name: the family member only needs to know
- * "call her now", not what was written.
+ * "call her now", not what was written. This matters because the default server is the public ntfy.sh: the alert
+ * crosses the internet, and anyone who knows the topic can read it.
  */
 export interface PagerConfig {
   enabled: boolean;
-  /** ntfy server on the same network, e.g. http://192.168.1.20:8090 */
+  /** https://ntfy.sh (default), or a self-hosted ntfy server on the local network. */
   server: string;
   topic: string;
   /** How the family member knows the reader, e.g. "Mama". */
   name: string;
 }
 
-export const EMPTY_PAGER: PagerConfig = { enabled: false, server: '', topic: '', name: '' };
+export const PUBLIC_NTFY = 'https://ntfy.sh';
+export const DEFAULT_TOPIC = 'scamshield-family-676767';
+export const EMPTY_PAGER: PagerConfig = { enabled: false, server: PUBLIC_NTFY, topic: DEFAULT_TOPIC, name: '' };
 
 const TYPE_RO: Record<ScamType, string> = {
   BANK_IMPERSONATION: 'bancă falsă',
@@ -34,7 +37,7 @@ const TYPE_RO: Record<ScamType, string> = {
   NONE: 'înșelătorie',
 };
 
-/** Only private-network hosts: the alert must never leave the local network (no ntfy.sh, no public server). */
+/** Private-network hosts (a self-hosted ntfy server at home). */
 export function isLocalHost(host: string): boolean {
   const h = host.toLowerCase().replace(/^\[|\]$/g, '');
   if (h === 'localhost' || h.endsWith('.local')) return true;
@@ -51,12 +54,15 @@ export type PagerProblem = 'server' | 'not_local' | 'topic' | 'name';
 export function checkConfig(c: PagerConfig): { origin: string } | { problem: PagerProblem } {
   let url: URL;
   try {
-    url = new URL(c.server.trim());
+    url = new URL(c.server.trim() === '' ? PUBLIC_NTFY : c.server.trim());
   } catch {
     return { problem: 'server' };
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return { problem: 'server' };
-  if (!isLocalHost(url.hostname)) return { problem: 'not_local' };
+  // Allowed: the public ntfy.sh over https, or a local server. Any other public host is refused, so a typo or a
+  // look-alike domain can never receive the alerts.
+  const publicNtfy = url.protocol === 'https:' && url.hostname === 'ntfy.sh' && url.port === '';
+  if (!publicNtfy && !isLocalHost(url.hostname)) return { problem: 'not_local' };
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(c.topic.trim())) return { problem: 'topic' };
   if (c.name.trim() === '' || c.name.length > 40) return { problem: 'name' };
   return { origin: url.origin };

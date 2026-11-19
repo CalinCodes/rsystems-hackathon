@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Result } from '@ss/contracts';
-import { checkConfig, isLocalHost, pagerPayload, sendPage, shouldPage, type PagerConfig } from './pager';
+import { checkConfig, EMPTY_PAGER, isLocalHost, pagerPayload, sendPage, shouldPage, type PagerConfig } from './pager';
 
 const cfg: PagerConfig = { enabled: true, server: 'http://192.168.1.20:8090', topic: 'familia-pop-7k2', name: 'Mama' };
 const r = (verdict: Result['verdict'], scamType: Result['scamType'] = 'BANK_IMPERSONATION') => ({ verdict, scamType }) as Result;
@@ -15,8 +15,19 @@ describe('pager', () => {
     }
   });
 
-  it('rejects a public ntfy server, a bad topic and an empty name', () => {
-    expect(checkConfig({ ...cfg, server: 'https://ntfy.sh' })).toEqual({ problem: 'not_local' });
+  it('accepts ntfy.sh (https only) or a local server, rejects other public hosts', () => {
+    expect(checkConfig({ ...cfg, server: 'https://ntfy.sh' })).toEqual({ origin: 'https://ntfy.sh' });
+    expect(checkConfig({ ...cfg, server: '' })).toEqual({ origin: 'https://ntfy.sh' });
+    expect(checkConfig({ ...cfg, server: 'http://ntfy.sh' })).toEqual({ problem: 'not_local' });
+    expect(checkConfig({ ...cfg, server: 'https://ntfy.sh.evil.com' })).toEqual({ problem: 'not_local' });
+    expect(checkConfig({ ...cfg, server: 'https://ntfy-sh.com' })).toEqual({ problem: 'not_local' });
+  });
+
+  it('defaults to ntfy.sh and the family topic', () => {
+    expect([EMPTY_PAGER.server, EMPTY_PAGER.topic, EMPTY_PAGER.enabled]).toEqual(['https://ntfy.sh', 'scamshield-family-676767', false]);
+  });
+
+  it('rejects a bad topic and an empty name', () => {
     expect(checkConfig({ ...cfg, topic: 'a b' })).toEqual({ problem: 'topic' });
     expect(checkConfig({ ...cfg, name: ' ' })).toEqual({ problem: 'name' });
     expect(checkConfig({ ...cfg, server: 'ftp://192.168.1.2' })).toEqual({ problem: 'server' });
@@ -54,6 +65,6 @@ describe('pager', () => {
     expect(JSON.parse(calls[0]?.body ?? '{}').topic).toBe('familia-pop-7k2');
     const bad = (async () => new Response('', { status: 500 })) as unknown as typeof fetch;
     await expect(sendPage(cfg, r('SCAM'), { fetchImpl: bad })).rejects.toThrow('ntfy 500');
-    await expect(sendPage({ ...cfg, server: 'https://ntfy.sh' }, r('SCAM'), { fetchImpl: ok })).rejects.toThrow('not_local');
+    await expect(sendPage({ ...cfg, server: 'https://example.com' }, r('SCAM'), { fetchImpl: ok })).rejects.toThrow('not_local');
   });
 });

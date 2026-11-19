@@ -9,7 +9,8 @@
   ],
   "host_permissions": [
     "https://web.whatsapp.com/*",
-    "http://localhost:11434/*"
+    "http://localhost:11434/*",
+    "https://ntfy.sh/*"
   ],
   "background": {
     "service_worker": "background.js"

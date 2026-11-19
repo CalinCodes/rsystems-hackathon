@@ -17,20 +17,21 @@
 </head>
 <body>
   <h1>Alertă pentru o persoană de încredere</h1>
-  <p>Când Scam Shield vede o țeapă pe WhatsApp, trimite o alertă pe telefonul unei rude, prin aplicația <b>ntfy</b>, în rețeaua de acasă.
+  <p>Când Scam Shield vede o țeapă pe WhatsApp, trimite o alertă pe telefonul unei rude, prin aplicația <b>ntfy</b>.
      Alerta spune doar numele, ora și tipul de țeapă. <b>Textul mesajelor nu pleacă niciodată de pe calculator.</b></p>
+  <p><small>Alerta trece prin serverul public ntfy.sh. Oricine știe subiectul o poate citi, deci alegeți un subiect greu de ghicit.</small></p>
 
   <div class="row"><input id="enabled" type="checkbox" /><label for="enabled" style="margin:0">Trimite alerte</label></div>
 
   <label for="name">Cum vă știe ruda (de ex. „Mama”)</label>
   <input id="name" type="text" maxlength="40" />
 
-  <label for="server">Adresa serverului ntfy din rețeaua de acasă</label>
-  <input id="server" type="url" placeholder="http://192.168.1.20:8090" />
-  <small>Doar adrese din rețeaua locală (192.168.x.x, 10.x.x.x, localhost, .local).</small>
+  <label for="server">Server ntfy</label>
+  <input id="server" type="url" placeholder="https://ntfy.sh" />
+  <small>Lăsați https://ntfy.sh. Un server propriu din rețeaua de acasă merge și el (192.168.x.x, 10.x.x.x, .local).</small>
 
   <label for="topic">Subiect ntfy (același ca în aplicația de pe telefon)</label>
-  <input id="topic" type="text" placeholder="scamshield-familia-pop-7k2" />
+  <input id="topic" type="text" placeholder="scamshield-family-676767" />
   <small>Litere, cifre, - și _. Alegeți ceva greu de ghicit.</small>
 
   <div>
