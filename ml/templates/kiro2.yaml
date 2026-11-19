@@ -1,6 +1,74 @@
-- type: COURIER_FEE
-  flags: [RF_IMPERSONATION, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT]
-  text: "{courier}: Coletul dvs. nu poate fi livrat. Plătiți taxa de {amount} aici: {fake_link}"
+# Kiro 2 scam types: family, investment, romance, job, prize, other — each with SAFE look-alikes.
+# Uses only slots defined in ../slots.yaml (owner: Kiro 1). Fictional values only.
+
+# --- FAMILY_EMERGENCY ---
 - type: FAMILY_EMERGENCY
   flags: [RF_NEW_NUMBER, RF_PAYMENT_REQUEST, RF_URGENCY, RF_SECRECY]
   text: "Mamă, sunt {family_name}, am alt număr: {phone_unknown}. Trimite-mi {amount} urgent și nu spune nimănui."
+- type: FAMILY_EMERGENCY
+  flags: [RF_NEW_NUMBER, RF_PAYMENT_REQUEST, RF_EMOTIONAL_PRESSURE]
+  text: "Tata, am avut un accident cu mașina, telefonul meu e stricat. Te rog trimite {amount} pe numărul ăsta nou: {phone_unknown}."
+# SAFE look-alike: real relative, no money, no new number, no secrecy
+- type: NONE
+  flags: []
+  text: "Bună mamă, sunt {family_name}. Ajung la cină pe la ora 7, aduc eu pâine. Pa!"
+
+# --- INVESTMENT ---
+- type: INVESTMENT
+  flags: [RF_TOO_GOOD, RF_URGENCY, RF_PAYMENT_REQUEST]
+  text: "Investiție garantată: dublați {amount} în 7 zile. Locuri limitate, înscrieți-vă în {deadline}: {fake_link}"
+- type: INVESTMENT
+  flags: [RF_TOO_GOOD, RF_SUSPICIOUS_CONTACT, RF_PAYMENT_REQUEST]
+  text: "Profit sigur de 300% din criptomonede. Depuneți {amount} și vă contactăm noi. Scrieți la {fake_link}"
+# SAFE look-alike: legitimate account statement, no promise, no deposit request
+- type: NONE
+  flags: []
+  text: "Raportul lunar al contului dvs. de economii este disponibil. Consultați-l oricând pe {official_link}."
+
+# --- ROMANCE ---
+- type: ROMANCE
+  flags: [RF_EMOTIONAL_PRESSURE, RF_PAYMENT_REQUEST, RF_SECRECY]
+  text: "Dragostea mea, nu am mai întâlnit pe nimeni ca tine. Am o problemă cu viza și am nevoie de {amount}. Să rămână între noi."
+- type: ROMANCE
+  flags: [RF_EMOTIONAL_PRESSURE, RF_NEW_NUMBER, RF_PAYMENT_REQUEST]
+  text: "Te iubesc. Îți scriu de pe alt număr {phone_unknown} pentru că mi s-a blocat cardul. Poți trimite {amount}?"
+# SAFE look-alike: friendly message from a known person, no money, no secrecy
+- type: NONE
+  flags: []
+  text: "Mi-a făcut mare plăcere cafeaua de azi. Ne mai vedem săptămâna viitoare? Spor la treabă!"
+
+# --- JOB_OFFER ---
+- type: JOB_OFFER
+  flags: [RF_TOO_GOOD, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "Angajăm de acasă, {amount} pe zi, fără experiență. Plătiți taxa de activare și începeți azi: {fake_link}"
+- type: JOB_OFFER
+  flags: [RF_TOO_GOOD, RF_DATA_REQUEST, RF_URGENCY]
+  text: "Felicitări, ați fost selectat pentru un post bine plătit. Trimiteți CNP și date cont în {deadline} aici: {fake_link}"
+# SAFE look-alike: real recruiter, official site, no fee, no data over chat
+- type: NONE
+  flags: []
+  text: "Bună ziua, am primit CV-ul dvs. Vă invităm la un interviu. Detalii pe pagina oficială {official_link}."
+
+# --- PRIZE_LOTTERY ---
+- type: PRIZE_LOTTERY
+  flags: [RF_TOO_GOOD, RF_URGENCY, RF_PAYMENT_REQUEST]
+  text: "Ați câștigat {amount}! Pentru a ridica premiul plătiți taxa de livrare în {deadline}: {fake_link}"
+- type: PRIZE_LOTTERY
+  flags: [RF_TOO_GOOD, RF_DATA_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "{shop}: Sunteți câștigătorul tombolei! Confirmați datele contului pentru a primi premiul: {fake_link}"
+# SAFE look-alike: loyalty points info you asked for, from official site, no fee
+- type: NONE
+  flags: []
+  text: "{shop}: Aveți 120 de puncte de fidelitate. Le puteți folosi la următoarea comandă pe {official_link}."
+
+# --- OTHER ---
+- type: OTHER
+  flags: [RF_URGENCY, RF_PAYMENT_REQUEST, RF_THREAT]
+  text: "Factura la curent este restantă. Dacă nu plătiți {amount} în {deadline}, vă deconectăm. Plată aici: {fake_link}"
+- type: OTHER
+  flags: [RF_DATA_REQUEST, RF_URGENCY, RF_SUSPICIOUS_CONTACT]
+  text: "Verificare de securitate: confirmați adresa și data nașterii în {deadline} sau contul va fi suspendat: {fake_link}"
+# SAFE look-alike: ordinary reminder, no payment, no data, official channel
+- type: NONE
+  flags: []
+  text: "Vă reamintim programarea de mâine la ora 10. Pentru reprogramare sunați la numărul de pe {official_link}."
