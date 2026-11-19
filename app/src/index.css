@@ -5,7 +5,8 @@
   --color-surface: #ffffff;
   --color-ink: #2a2118;
   --color-safe: #2e7d4f;
-  --color-suspicious: #b7791f;
+  /* Darker than the first pick (#b7791f, 3.6:1 on white): this one is 5.7:1, so amber text passes AA. */
+  --color-suspicious: #8f5c0a;
   --color-scam: #c0392b;
   --radius-card: 18px;
   --shadow-soft: 0 12px 40px -16px rgb(42 33 24 / 0.22);
