@@ -5,6 +5,7 @@
   "workspaces": ["contracts", "engine", "eval", "app"],
   "scripts": {
     "eval": "tsx eval/eval.ts",
+    "robust": "tsx eval/robustness.ts",
     "warnings": "tsx engine/scripts/buildWarnings.ts",
     "build:extension": "tsx extension/build.ts",
     "test": "vitest run",
