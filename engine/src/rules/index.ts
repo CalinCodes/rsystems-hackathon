@@ -5,9 +5,24 @@ import { dataRequest } from './data';
 import { newNumber } from './newNumber';
 import { paymentRequest } from './payment';
 import { remoteAccess } from './remote';
+import { channelSwitch, emotionalPressure, impersonation, secrecyRule, threat, tooGood, urgency } from './soft';
 import { buildCtx, type Rule } from './util';
 
-const RULES: Rule[] = [suspiciousContact, codeRequest, remoteAccess, dataRequest, paymentRequest, newNumber];
+const RULES: Rule[] = [
+  suspiciousContact,
+  codeRequest,
+  remoteAccess,
+  dataRequest,
+  paymentRequest,
+  newNumber,
+  urgency,
+  secrecyRule,
+  tooGood,
+  threat,
+  impersonation,
+  emotionalPressure,
+  channelSwitch,
+];
 
 /** Sorted so the same input always yields hits in the same order (determinism). */
 export function runRules(s: Scenario): Hit[] {

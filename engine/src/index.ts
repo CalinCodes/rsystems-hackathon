@@ -1,6 +1,7 @@
 import type { Result, Scenario, Weights } from '@ss/contracts';
 import { normalizeText } from './normalize';
 import { runRules } from './rules';
+import { decideType } from './scamType';
 import { scoreThread } from './scoring';
 import { buildWarning } from './warnings';
 
@@ -15,7 +16,7 @@ export interface AnalyzeOptions {
   weights?: Weights;
 }
 
-// Rules → scoreThread. scamType is still NONE until the type decision list lands; classifier not wired yet.
+// Rules → scoreThread → decision list for scamType. The embedding classifier is not wired in yet.
 export async function analyze(s: Scenario, _opts: AnalyzeOptions = {}): Promise<Result> {
   const t0 = performance.now();
   const texts = s.messages.map((m) => normalizeText(m.text));
@@ -28,7 +29,7 @@ export async function analyze(s: Scenario, _opts: AnalyzeOptions = {}): Promise<
   const partial = {
     id: s.id,
     verdict,
-    scamType: 'NONE' as const,
+    scamType: decideType(s, hits, verdict === 'SAFE'),
     score,
     firstAlert,
     timeline,

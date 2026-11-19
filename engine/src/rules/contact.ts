@@ -80,6 +80,9 @@ function senderHits(c: Parameters<Rule>[0], m: MsgCtx, claimed: Org[]): Hit[] {
   return bad ? [makeHit('RF_SUSPICIOUS_CONTACT', m, 0, 0)].map((h) => ({ ...h, evidence: 'sender address' })) : [];
 }
 
+/** Which catalog sites (e.g. "bancadunarea.ro") are named in already-normalized text. */
+export const claimedSites = (norm: string): string[] => claimedIn(norm).map((o) => o.site);
+
 export const suspiciousContact: Rule = (c) => {
   const nameClaims = claimedIn(normalizeText(`${c.scenario.sender.name ?? ''} ${c.scenario.sender.address ?? ''}`));
   const out: Hit[] = [];
@@ -87,10 +90,15 @@ export const suspiciousContact: Rule = (c) => {
   for (const m of c.msgs) {
     if (m.from !== 'sender') continue;
     const claimed = [...new Set([...nameClaims, ...claimedIn(m.norm)])];
+    const before = out.length;
     out.push(...messageHits(m, claimed));
     if (!senderDone && claimed.length > 0) {
       out.push(...senderHits(c, m, claimed));
       senderDone = true;
+    }
+    // Naming an organisation while the contact details don't match it is impersonation, not just a odd link.
+    if (claimed.length > 0 && out.length > before) {
+      out.push({ flag: 'RF_IMPERSONATION', msg: m.n, evidence: claimed[0]?.site ?? '', src: 'rule' });
     }
   }
   return out;
