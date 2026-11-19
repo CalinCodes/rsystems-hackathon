@@ -54,6 +54,10 @@ describe('pager', () => {
     expect(Object.keys(p).sort()).toEqual(['message', 'priority', 'tags', 'title', 'topic']);
   });
 
+  it('the test alert uses the same max priority as a real alert', () => {
+    expect(pagerPayload(cfg, r('SCAM'), new Date(), true).priority).toBe(5);
+  });
+
   it('POSTs JSON to the server root and throws on HTTP error', async () => {
     const calls: { url: string; body: string }[] = [];
     const ok = (async (url: string, init: RequestInit) => {

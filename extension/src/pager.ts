@@ -83,8 +83,10 @@ export function pagerPayload(c: PagerConfig, r: Pick<Result, 'scamType'>, now: D
       topic: c.topic.trim(),
       title: 'Scam Shield: test',
       message: `Alertele pentru ${name} funcționează. Veți primi un mesaj aici dacă ${name} primește o țeapă pe WhatsApp.`,
-      priority: 3,
-      tags: ['white_check_mark'],
+      // Same priority as a real alert (5 = max): the test must ring exactly like the real thing, or a phone set up
+      // to ring only on max priority would look fine in the test and stay silent on a real scam.
+      priority: 5,
+      tags: ['rotating_light'],
     };
   }
   return {
