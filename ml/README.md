@@ -40,6 +40,27 @@ precision is ≥ 0.9**, and it is never below 0.5.
 `thresholds.json` lives outside `weights.json` because the `Weights` type in `contracts/`
 is frozen, and `loadWeights()` would drop any extra field.
 
+## How the engine uses it (`engine/src/clf.ts`)
+
+Rules, the model, link checks and calibrated cuts together make AI tier 6 (+10%).
+
+- `analyze(s, { weights })` embeds each **sender** message. It sends the raw text, because
+  training rows keep diacritics and case noise. Reader replies are never embedded.
+- A `{ flag, msg, evidence: '', src: 'clf', p }` hit is added when `p >= threshold`. A flag
+  whose threshold is `null` is skipped. `scoreThread` counts each flag once, at its first message,
+  so a rule hit and a clf hit on the same flag don't add up.
+- With no weights or the empty stub, it is rules only, so tests and fixtures stay offline. If
+  Ollama is down, it is also rules only, and `timingsMs.clfUnavailable = 1`.
+- Scam type stays with the rule decision list. The type model is not used at runtime.
+- The default cut set is `thresholds.json`; pass `{ thresholds }` to override it.
+  `npm run eval -- <folder> <csv> --ablation` runs rules only, p90 and p80 side by side, and lists
+  the flags the model added per id.
+
+Checked facts:
+- bge-m3 through Ollama is bit-stable: the same text gives the same vector, alone or in any
+  batch order (max difference 0.0). The clf path keeps the "same input, same Result" rule.
+- Ollama answers CORS for `http://localhost:5173`, so the browser app can call it as is.
+
 ## How the numbers are measured
 
 5-fold cross-validation **grouped by `template_id`**: each template is held out once, and
