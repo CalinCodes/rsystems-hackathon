@@ -1,61 +1,99 @@
-import type { BannerModel } from './banner';
+import { bannerSignature, spokenText, type BannerModel } from './banner';
+import { localVoice, speak, stopSpeaking } from './speech';
+import { button, layer, leave, node, reducedMotion } from './ui';
 
-const BANNER_ID = 'scam-shield-banner';
+export interface BannerHandlers {
+  /** Which chat and verdict this banner belongs to: part of the redraw key, so handlers never go stale. */
+  id: string;
+  /** The reader closed the banner: it shrinks to a small pill they can reopen, it never just vanishes. */
+  collapsed: boolean;
+  onCollapse: () => void;
+  onExpand: () => void;
+  /** Scroll to the message where the alert starts; absent when that message is not on screen. */
+  onShowMessage?: () => void;
+}
+
 const MARK_CLASS = 'scam-shield-first-alert';
+let shown = '';
+let lastTone: BannerModel['tone'] | null = null;
 
-// Inline styles and system fonts: no stylesheet or web font is fetched from anywhere.
-const TONES: Record<BannerModel['tone'], { bg: string; fg: string; border: string }> = {
-  scam: { bg: '#fdecea', fg: '#5f1410', border: '#b3261e' },
-  suspicious: { bg: '#fff4e0', fg: '#4a2c00', border: '#a15c00' },
-  info: { bg: '#eef1f5', fg: '#1f2933', border: '#52606d' },
-};
-
-/** Draw, replace or remove the warning banner at the top of the window. */
-export function renderBanner(model: BannerModel | null, onDismiss: () => void): void {
-  document.getElementById(BANNER_ID)?.remove();
-  if (model === null) return;
-  const t = TONES[model.tone];
-  const box = document.createElement('div');
-  box.id = BANNER_ID;
-  box.setAttribute('role', 'alert');
-  box.style.cssText = `position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;
-    max-width:640px;width:calc(100% - 32px);box-sizing:border-box;padding:16px 48px 16px 20px;border-radius:12px;
-    background:${t.bg};color:${t.fg};border:3px solid ${t.border};box-shadow:0 6px 24px rgba(0,0,0,.25);
-    font:18px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;`;
-  const body = document.createElement('p');
-  body.style.cssText = 'margin:0 0 8px;font-size:20px;font-weight:600;';
-  body.textContent = `${model.icon} ${model.body}`;
-  const note = document.createElement('p');
-  note.style.cssText = 'margin:0 0 8px;';
-  note.textContent = model.note ?? '';
-  const action = document.createElement('p');
-  action.style.cssText = 'margin:0 0 8px;font-weight:600;';
-  action.textContent = `Ce să faceți: ${model.action}`;
-  const footer = document.createElement('p');
-  footer.style.cssText = 'margin:0;font-size:15px;opacity:.85;';
-  footer.textContent = model.footer;
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.setAttribute('aria-label', 'Închide avertismentul');
-  close.textContent = '×';
-  close.style.cssText = `position:absolute;top:8px;right:10px;border:0;background:transparent;color:${t.fg};
-    font-size:28px;line-height:1;cursor:pointer;`;
-  close.addEventListener('click', () => {
-    onDismiss();
-    box.remove();
+function bannerCard(m: BannerModel, h: BannerHandlers, escalate: boolean): HTMLElement {
+  const box = node('section', `card banner ${m.tone}${escalate ? ' escalate' : ''}`);
+  // A scam interrupts the screen reader; the calm grey note waits its turn.
+  box.setAttribute('role', m.tone === 'info' ? 'status' : 'alert');
+  box.setAttribute('aria-label', 'Scam Shield');
+  const head = node('p', 'headline');
+  head.append(node('span', 'icon', m.icon), node('span', '', m.headline));
+  const action = node('p', 'action');
+  action.append(node('b', '', 'Ce să faceți'), document.createTextNode(m.action));
+  const row = node('div', 'row');
+  if (localVoice() !== null) row.append(button('🔊 Ascultați', 'primary', () => void speak(spokenText(m))));
+  if (h.onShowMessage) row.append(button('👀 Arată mesajul', '', h.onShowMessage));
+  row.append(button('Am înțeles', '', h.onCollapse));
+  const close = button('×', 'close', h.onCollapse);
+  close.setAttribute('aria-label', 'Ascunde avertismentul');
+  box.append(head, ...(m.body ? [node('p', 'body', m.body)] : []), ...(m.note ? [node('p', 'note', m.note)] : []));
+  box.append(action, row, node('p', 'footer', m.footer), close);
+  box.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') h.onCollapse();
   });
-  box.append(body, ...(model.note ? [note] : []), action, footer, close);
-  document.body.append(box);
+  return box;
+}
+
+function pill(m: BannerModel, h: BannerHandlers): HTMLElement {
+  const label = m.tone === 'info' ? 'Număr necunoscut' : 'Avertisment ascuns';
+  const p = button(`${m.icon} ${label} – apăsați aici`, `pill ${m.tone}`, h.onExpand);
+  p.setAttribute('aria-label', `${m.headline} Apăsați ca să vedeți avertismentul.`);
+  return p;
+}
+
+/** Draw, update or remove the warning at the top of the window. Same content = left alone, no flicker. */
+export function renderBanner(model: BannerModel | null, h: BannerHandlers): void {
+  const key = model === null ? '' : `${h.id}|${bannerSignature(model)}|${h.collapsed}|${h.onShowMessage ? 1 : 0}`;
+  if (key === shown) return;
+  shown = key;
+  const root = layer();
+  const old = root.querySelector('.banner, .pill');
+  if (model === null) {
+    stopSpeaking();
+    lastTone = null;
+    return leave(old);
+  }
+  const escalate = model.tone === 'scam' && lastTone !== null && lastTone !== 'scam';
+  lastTone = model.tone;
+  if (h.collapsed) stopSpeaking();
+  const next = h.collapsed ? pill(model, h) : bannerCard(model, h, escalate);
+  old?.remove();
+  root.append(next);
+  if (!h.collapsed && old?.classList.contains('pill')) next.querySelector('button')?.focus();
+}
+
+const MARK_STYLE = `
+.${MARK_CLASS} { outline: 3px solid #b3261e !important; outline-offset: 4px; border-radius: 8px;
+  animation: scam-shield-mark 1.2s ease-out 2; }
+@keyframes scam-shield-mark { from { box-shadow: 0 0 0 0 rgba(179,38,30,.55); } to { box-shadow: 0 0 0 16px rgba(179,38,30,0); } }
+@media (prefers-reduced-motion: reduce) { .${MARK_CLASS} { animation: none; } }`;
+
+function ensureMarkStyle(): void {
+  if (document.getElementById('scam-shield-mark-style')) return;
+  const s = document.createElement('style');
+  s.id = 'scam-shield-mark-style';
+  s.textContent = MARK_STYLE;
+  document.head.append(s);
 }
 
 /** Outline the message where the alert starts, so the reader sees which one is dangerous. */
 export function markFirstAlert(bubble: HTMLElement | undefined): void {
-  for (const el of document.querySelectorAll(`.${MARK_CLASS}`)) {
-    el.classList.remove(MARK_CLASS);
-    (el as HTMLElement).style.outline = '';
-  }
-  if (!bubble) return;
+  for (const el of document.querySelectorAll(`.${MARK_CLASS}`)) if (el !== bubble) el.classList.remove(MARK_CLASS);
+  if (!bubble || bubble.classList.contains(MARK_CLASS)) return;
+  ensureMarkStyle();
   bubble.classList.add(MARK_CLASS);
-  bubble.style.outline = '3px solid #b3261e';
-  bubble.style.outlineOffset = '4px';
+}
+
+/** Bring the dangerous message to the middle of the screen and pulse it again. */
+export function showMessage(bubble: HTMLElement): void {
+  bubble.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
+  bubble.classList.remove(MARK_CLASS);
+  void bubble.offsetWidth; // restart the pulse animation
+  bubble.classList.add(MARK_CLASS);
 }

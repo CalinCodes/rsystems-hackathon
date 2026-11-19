@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Result } from '@ss/contracts';
-import { bannerModel, shouldNotify } from './banner';
+import { bannerModel, bannerSignature, shouldNotify, spokenText, stripLead } from './banner';
 import { cachedEmbed, RETRY_AFTER_MS } from './embedCache';
+import { pickLocalRoVoice } from './speech';
 import { toScenario } from './thread';
 
 const result = (verdict: Result['verdict'], timingsMs: Record<string, number> = { clf: 1 }): Result => ({
@@ -30,13 +31,47 @@ describe('bannerModel', () => {
   });
   it('uses the engine warning, adds the unknown-number note, and says whether the local model ran', () => {
     const on = bannerModel(result('SCAM'), unknown);
-    expect(on).toMatchObject({ tone: 'scam', body: 'Atenție, pare o țeapă! Text.', action: 'Nu răspundeți.' });
+    expect(on).toMatchObject({ tone: 'scam', headline: 'Atenție, pare o țeapă!', body: 'Text.', action: 'Nu răspundeți.' });
     expect(on?.note).toBe('Numărul nu este în agenda dumneavoastră.');
     expect(on?.footer).toContain('model AI local');
     const off = bannerModel(result('SUSPICIOUS', { clf: 1, clfUnavailable: 1 }), known);
     expect(off?.tone).toBe('suspicious');
     expect(off?.note).toBeNull();
     expect(off?.footer).not.toContain('model AI');
+  });
+});
+
+describe('stripLead / spokenText / bannerSignature', () => {
+  it('drops the lead only when the body starts with it', () => {
+    expect(stripLead('Atenție, pare o țeapă! Text.', 'Atenție, pare o țeapă!')).toBe('Text.');
+    expect(stripLead('Alt text.', 'Atenție, pare o țeapă!')).toBe('Alt text.');
+  });
+  it('reads headline, body, note and action in order, without the footer', () => {
+    const m = bannerModel(result('SCAM'), unknown);
+    expect(m).not.toBeNull();
+    if (m === null) return;
+    expect(spokenText(m)).toBe(
+      'Atenție, pare o țeapă! Text. Numărul nu este în agenda dumneavoastră. Ce să faceți: Nu răspundeți.',
+    );
+    expect(spokenText(m)).not.toContain('Verificat');
+  });
+  it('gives the same signature for the same banner and a new one when the verdict changes', () => {
+    const a = bannerModel(result('SCAM'), known);
+    const b = bannerModel(result('SCAM'), known);
+    const c = bannerModel(result('SUSPICIOUS'), known);
+    if (a === null || b === null || c === null) throw new Error('expected banners');
+    expect(bannerSignature(a)).toBe(bannerSignature(b));
+    expect(bannerSignature(a)).not.toBe(bannerSignature(c));
+  });
+});
+
+describe('pickLocalRoVoice', () => {
+  it('picks a Romanian voice on this computer and never a remote one', () => {
+    const remote = { lang: 'ro-RO', localService: false };
+    const local = { lang: 'ro-RO', localService: true };
+    expect(pickLocalRoVoice([remote, local])).toBe(local);
+    expect(pickLocalRoVoice([remote, { lang: 'en-US', localService: true }])).toBeNull();
+    expect(pickLocalRoVoice([{ lang: 'rom', localService: true }])).toBeNull();
   });
 });
 
