@@ -3,7 +3,7 @@ import { analyze, embed, loadWeights } from '@ss/engine';
 import weightsJson from '../../ml/out/weights.json';
 import { shouldNotify } from './banner';
 import { cachedEmbed } from './embedCache';
-import { decidePage, sendPage, sendWithRetry } from './pager';
+import { decidePage, sendPage } from './pager';
 import { loadMark, loadPager, saveLast, saveMark } from './pagerStore';
 import { threadKey } from './thread';
 
@@ -55,9 +55,16 @@ async function pageFamily(chat: string, s: Scenario, r: Result): Promise<void> {
     const lastMsg = last ? threadKey('', [{ outgoing: last.from === 'reader', text: last.text }]) : '';
     const now = Date.now();
     if (decidePage(await loadMark(chat), r, lastMsg, now) !== 'page') return;
-    const res = await sendWithRetry(() => sendPage(cfg, r));
-    if (res.ok) await saveMark(chat, { at: now, msg: lastMsg });
-    await saveLast({ at: Date.now(), outcome: res.ok ? 'sent' : 'failed', attempts: res.attempts, ...(res.ok ? {} : { error: res.error }) });
+    // Exactly ONE request per detected scam message: the mark is written BEFORE sending and there is no retry.
+    // ntfy.sh limits each public IP (60-request burst, then 1 per 5 s, 250 messages a day), and at a venue every
+    // laptop shares one IP, so retries and repeats used to burn the allowance and get every later alert refused.
+    await saveMark(chat, { at: now, msg: lastMsg });
+    try {
+      await sendPage(cfg, r);
+      await saveLast({ at: Date.now(), outcome: 'sent', attempts: 1 });
+    } catch (e) {
+      await saveLast({ at: Date.now(), outcome: 'failed', attempts: 1, error: e instanceof Error ? e.message : 'eroare' });
+    }
   } catch {
     // storage unavailable: nothing to page with; the reader's own warning is unaffected
   } finally {

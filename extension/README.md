@@ -50,8 +50,10 @@ Anyone who knows the topic can read its alerts, so keep the topic hard to guess.
 3. **Trimite un test** sends a test alert. From a terminal: `curl -d "test" https://ntfy.sh/scamshield-family-676767`.
 
 When it rings: the chat is SCAM and a new message arrived since the last alert, at most once every 2 minutes per
-chat (reopening a chat never rings again). Sending is retried 3 times (0 s, 2 s, 5 s) on network errors, HTTP 429
-and 5xx. The options page shows the result of the last attempt. If ntfy.sh is unreachable, the reader still gets the
+chat (reopening a chat never rings again). Each detected scam message sends exactly one request, with no retry:
+ntfy.sh limits each public IP (60-request burst, then 1 per 5 s, 250 messages a day), and at a venue all laptops share
+one IP. HTTP 429 means that allowance is used up: switch to the phone's hotspot or a self-hosted ntfy server. The
+options page shows the result of the last attempt. If ntfy.sh is unreachable, the reader still gets the
 normal warning. With Wi-Fi off there is no family alert (the detector itself keeps working offline).
 
 ## How it works
