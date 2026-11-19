@@ -51,7 +51,8 @@ function messageHits(m: MsgCtx, claimed: Org[]): Hit[] {
 
   for (const url of extractUrls(m.raw)) {
     const host = hostOf(url);
-    const official = ORGS.some((o) => isOfficialHost(host, o.site));
+    // Official means official FOR THE CLAIMED ORG: a "Banca Dunărea" text linking to anaf.ro is still a mismatch.
+    const official = (claimed.length > 0 ? claimed : ORGS).some((o) => isOfficialHost(host, o.site));
     if (hasDisguisedAuthority(url) || host === '') flag(url);
     else if (SHORTENERS.test(host)) flag(url);
     else if (claimed.length > 0 && !official) flag(url);

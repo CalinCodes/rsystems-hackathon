@@ -19,8 +19,24 @@ export interface Amount {
 }
 
 const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/gi;
+/**
+ * Bare hosts are matched as the WHOLE dotted token, ending only at a real boundary. A TLD allowlist inside the regex
+ * would stop at "bancadunarea.ro" in "bancadunarea.ro.evil.zzz" and report an official-looking host.
+ */
 const URL_RE =
-  /\b(?:https?:\/\/|www\.)[^\s<>"']+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:ro|com|net|org|eu|info|xyz|top|click|link|app|online|site|shop|store|live|icu|vip|club|biz|cc|me|co|io|ly|gy|gd|gl|example)\b(?:\/[^\s<>"']*)?/gi;
+  /\b(?:https?:\/\/|www\.)[^\s<>"']+|(?<![\w@.-])[a-z0-9-]+(?:\.[a-z0-9-]+)+(?![\w-]|\.\w)(?:\/[^\s<>"']*)?/gi;
+
+const KNOWN_TLDS = new Set(
+  'ro com net org eu info xyz top click link app online site shop store live icu vip club biz cc me co io ly gy gd gl example'.split(' '),
+);
+
+/** Filters prose like "2.500" or "ok.sunati": a bare token must end in a known TLD, or have 3+ labels ending in letters. */
+function looksLikeUrl(token: string): boolean {
+  if (/^(?:https?:\/\/|www\.)/i.test(token)) return true;
+  const labels = (token.split('/')[0] ?? '').toLowerCase().split('.');
+  const tld = labels[labels.length - 1] ?? '';
+  return KNOWN_TLDS.has(tld) || (labels.length >= 3 && /^[a-z]{2,24}$/.test(tld));
+}
 // Romanian numbers: +40 / 0040 / 0 prefix then 9 digits, with optional space/dot/dash separators.
 const PHONE_RE = /(?<![\d+])(?:\+40|0040|0)[\s.-]?\d(?:[\s.-]?\d){8}(?!\d)/g;
 const AMOUNT_RE = /(?<![\d.,])(\d{1,3}(?:[.\s]\d{3})+|\d+)(?:,(\d{1,2}))?\s*(lei|ron|eur|euro|usd|€|\$)(?![a-z])/gi;
@@ -50,7 +66,7 @@ export function extractUrls(text: string): string[] {
   const noScheme = blank(text, SCHEME_URL_RE);
   for (const m of noScheme.matchAll(EMAIL_PATH_RE)) found.push({ index: m.index ?? 0, url: m[0] });
   const rest = blank(blank(noScheme, EMAIL_PATH_RE), EMAIL_RE);
-  for (const m of rest.matchAll(URL_RE)) found.push({ index: m.index ?? 0, url: m[0] });
+  for (const m of rest.matchAll(URL_RE)) if (looksLikeUrl(m[0])) found.push({ index: m.index ?? 0, url: m[0] });
   return found.sort((a, b) => a.index - b.index).map((f) => trimTrailing(f.url));
 }
 

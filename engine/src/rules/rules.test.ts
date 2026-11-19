@@ -110,3 +110,27 @@ describe('evasion resistance', () => {
     expect(flags(['Scrieți la ion@gmail.com'])).toEqual([]);
   });
 });
+
+describe('review follow-ups', () => {
+  it('an organisation linking to its own site is fine', () => {
+    expect(flags(['ANAF: detalii pe anaf.ro'])).toEqual([]);
+  });
+  it('judges the whole host, not an official-looking prefix', () => {
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro.evil.zzz'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro-login.zzz/x'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro.'])).toEqual([]);
+  });
+  it('a denial far from the request does not silence it', () => {
+    // No comma between denial and request: only the distance limit separates them.
+    expect(
+      flags(['Banca nu vă cere nimic de la dumneavoastră și suntem foarte atenți la siguranța datelor dar spuneți-mi codul primit']),
+    ).toContain('RF_CODE_REQUEST');
+    expect(
+      flags(['Nu vă vom cere nimic în plus față de ce ați discutat și ce am stabilit amândoi mai devreme dar instalați AnyDesk acum']),
+    ).toContain('RF_REMOTE_ACCESS');
+  });
+  it('a denial right before the verb still wins', () => {
+    expect(flags(['Banca nu vă va cere niciodată să instalați AnyDesk'])).toEqual([]);
+    expect(flags(['Nu vă vom cere niciodată să ne spuneți codul primit'])).toEqual([]);
+  });
+});

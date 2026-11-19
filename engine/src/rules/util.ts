@@ -31,21 +31,33 @@ export const NOT = String.raw`(?<!\bnu (?:(?:il|o|le|va|ne|mi|vi|ti|sa) )*)`;
 export const GAP = String.raw`(?:[^.!?;\n]|\.(?=\d)){0,60}`;
 
 /**
- * A denial only counts inside the SAME clause as the match (clauses split on . ! ? ; newline and comma).
- * WHY: a scammer can append "nu va cerem niciodata nimic" elsewhere in the text to try to silence a real request.
+ * A denial only counts when it comes BEFORE the match, in the SAME clause (split on . ! ? ; newline and comma),
+ * and within DENY_REACH characters of it, i.e. it plausibly governs that match.
+ * WHY: a scammer can pad a message with "nu va cerem nimic" next to (or after) a real request to try to silence it.
  */
-const DENY = /\bnu (?:(?:va|ne|vom|il|o|le) )*(?:cere\w*|cerem|solicit\w*|comunic\w*|divulg\w*|dezvalu\w*|furniz\w*|instal\w*)\b/;
+const DENY = /\bnu (?:(?:va|ne|vom|il|o|le) )*(?:cere\w*|cerem|solicit\w*|comunic\w*|divulg\w*|dezvalu\w*|furniz\w*|instal\w*)\b/g;
+const DENY_REACH = 40;
 
-export function clauseAt(norm: string, index: number): string {
+function clauseBounds(norm: string, index: number): { start: number; end: number } {
   const before = norm.slice(0, index);
   const start = Math.max(before.search(/[.!?;,\n][^.!?;,\n]*$/) + 1, 0);
-  const rest = norm.slice(index);
-  const end = rest.search(/[!?;,\n]|\.(?!\d)/);
-  return norm.slice(start, end === -1 ? norm.length : index + end);
+  const end = norm.slice(index).search(/[!?;,\n]|\.(?!\d)/);
+  return { start, end: end === -1 ? norm.length : index + end };
+}
+
+export function clauseAt(norm: string, index: number): string {
+  const { start, end } = clauseBounds(norm, index);
+  return norm.slice(start, end);
 }
 
 export function isDenied(norm: string, index: number): boolean {
-  return DENY.test(clauseAt(norm, index));
+  const { start, end } = clauseBounds(norm, index);
+  for (const d of norm.slice(start, end).matchAll(DENY)) {
+    const dStart = start + (d.index ?? 0);
+    const dEnd = dStart + d[0].length;
+    if (dStart <= index && index - dEnd <= DENY_REACH) return true;
+  }
+  return false;
 }
 
 export function makeHit(flag: FlagCode, m: MsgCtx, index: number, length: number): Hit {
