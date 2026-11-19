@@ -206,3 +206,38 @@ describe('tampering is judged on the original text', () => {
     expect(flags(['Ne vedem mâine​.'])).toEqual([]);
   });
 });
+
+describe('tamper check covers paths, ports, glued punctuation and userinfo', () => {
+  const claimed = (url: string): FlagCode[] => flags([`Banca Dunărea: intrați pe ${url}`]);
+  it.each([
+    ['https://bancadunarea.r‍o/login'],
+    ['bancadunarea.ro​/login'],
+    ['bancadunarea.r‍o:8080/x'],
+    ['bancadunarea.r‍o?x=1'],
+    ['pe:bancadunarea.r‍o'],
+    ['(bancadunarea.r‍o)'],
+    ['https://a.ro@bancadunarea.r‍o/x'],
+    ['https://b̀ancadunarea.ro/login'],
+  ])('flags %s', (url) => {
+    expect(claimed(url)).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('flags a tampered email domain followed by a query', () => {
+    expect(flags(['Scrieți la suport@bancadunarea.r‍o?subject=x'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('leaves clean links, times and prose alone', () => {
+    expect(claimed('https://bancadunarea.ro/login')).toEqual([]);
+    expect(claimed('bancadunarea.ro:8080/x')).toEqual([]);
+    expect(flags(['Ne vedem la 10:30​, la cafenea'])).toEqual([]);
+  });
+});
+
+describe('BOM is a character, not a separator', () => {
+  it('a U+FEFF inside a host cannot split it into two clean halves', () => {
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro﻿.evil.zzz'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.r﻿o'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Vezi evil.﻿ro'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('ordinary text with a BOM is still fine', () => {
+    expect(flags(['Ne vedem mâine﻿ la cafea'])).toEqual([]);
+  });
+});

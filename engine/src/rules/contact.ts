@@ -64,9 +64,19 @@ const INVISIBLE = /[\p{Cf}\p{M}]/u;
  * (NFKC first, so a decomposed Romanian "ă" = a + breve is recomposed and does not trigger this.)
  */
 function obfuscatedHostToken(orig: string): string | null {
-  for (const tok of orig.split(/\s+/)) {
-    const t = tok.normalize('NFKC').replace(/^\p{P}+|\p{P}+$/gu, '');
-    if (HOSTISH.test(t) && INVISIBLE.test(t)) return t;
+  // Split on brackets/quotes/commas too, so "(host)" and "pe,host" don't hide a host inside a bigger token.
+  // [^\S﻿] = whitespace EXCEPT the BOM: JS \s matches U+FEFF, which is also an invisible format character,
+  // so splitting on plain \s would cut a tampered host in half and leave two clean-looking pieces.
+  for (const tok of orig.split(/(?:[^\S﻿]|[<>"'(),;])+/)) {
+    const nfkc = tok.normalize('NFKC');
+    // Only the authority matters: drop any scheme (even glued to a prefix like "pe:https://"), then cut at the path.
+    const afterScheme = nfkc.includes('://') ? nfkc.slice(nfkc.indexOf('://') + 3) : nfkc;
+    const authority = afterScheme.split(/[/?#]/)[0] ?? '';
+    // ":" separates host from port ("host:8080") and from stray prefixes ("pe:host"): test each piece.
+    for (const part of authority.split(':')) {
+      const t = part.replace(/^\p{P}+|\p{P}+$/gu, '');
+      if (HOSTISH.test(t) && INVISIBLE.test(t)) return t;
+    }
   }
   return null;
 }
