@@ -2,14 +2,17 @@
 
 Steps:
   1. Read ml/out/dataset.jsonl.
-  2. Embed texts via Ollama POST http://localhost:11434/api/embed (model "bge-m3", batched).
-  3. Hold out 15% BY template_id (never random rows — avoids template leakage: rows
-     from one template are near-duplicates, so a random split would put almost-copies
-     on both sides and inflate the scores).
-  4. Train one LogisticRegression(class_weight='balanced') per flag + one multinomial
-     model for scam type.
-  5. Print per-flag precision/recall on the held-out set.
-  6. Export ml/out/weights.json matching contracts/types.ts `Weights`.
+  2. Embed texts via Ollama POST http://localhost:11434/api/embed (model "bge-m3", batched),
+     cached in ml/out/emb_cache.npz so reruns don't re-embed unchanged text.
+  3. Score with 5-fold cross-validation GROUPED BY template_id. Rows from one template are
+     near-duplicates, so a random split would put almost-copies on both sides and
+     inflate the scores. Every template is held out exactly once, so every flag gets a
+     real estimate (a single 15% holdout left most flags with no positive test rows).
+  4. From the out-of-fold probabilities, pick per flag the lowest cut whose precision
+     is >= MIN_PRECISION. WHY precision first: a classifier hit adds 15-35 points, so
+     one false flag can push a SAFE message to SUSPICIOUS and scare the reader.
+     Written to ml/out/thresholds.json (not weights.json: the Weights contract is frozen).
+  5. Train the final per-flag and type models on ALL rows and export ml/out/weights.json.
 
 The exported shape must stay in lockstep with engine/src/classifier.ts:
   predict()  does sigmoid(w · emb + b) per flag  -> flags[f] = {w: coef_[0], b: intercept_[0]}
@@ -27,18 +30,23 @@ from pathlib import Path
 import numpy as np
 import requests
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.model_selection import GroupKFold
 
 SEED = 42
 EMBED_MODEL = "bge-m3"
 EMBED_DIM = 1024
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embed"
 BATCH = 32
-HOLDOUT_FRAC = 0.15
+N_FOLDS = 5
+MIN_PRECISION = 0.9
+# Cuts below 0.5 are never offered: they would fire on coin-flip outputs.
+CUT_GRID = [round(0.5 + 0.01 * i, 2) for i in range(50)]
 
 HERE = Path(__file__).resolve().parent
 DATASET_PATH = HERE / "out" / "dataset.jsonl"
 WEIGHTS_PATH = HERE / "out" / "weights.json"
+THRESHOLDS_PATH = HERE / "out" / "thresholds.json"
+CACHE_PATH = HERE / "out" / "emb_cache.npz"
 
 # Must equal ALL_FLAGS in contracts/constants.ts.
 ALL_FLAGS = [
@@ -60,64 +68,84 @@ def embed(texts: list[str]) -> np.ndarray:
     """Batched Ollama embeddings. The only network call this script makes."""
     out: list[list[float]] = []
     for i in range(0, len(texts), BATCH):
-        chunk = texts[i : i + BATCH]
         res = requests.post(
             OLLAMA_EMBED_URL,
-            json={"model": EMBED_MODEL, "input": chunk},
+            json={"model": EMBED_MODEL, "input": texts[i : i + BATCH]},
             timeout=120,
         )
         res.raise_for_status()
         out.extend(res.json()["embeddings"])
-    arr = np.asarray(out, dtype=np.float64)
-    if arr.shape[1] != EMBED_DIM:
+    arr = np.asarray(out, dtype=np.float64).reshape(len(out), -1)
+    if len(out) and arr.shape[1] != EMBED_DIM:
         sys.exit(f"embedding dim {arr.shape[1]} != contract dim {EMBED_DIM}")
     return arr
 
 
-def split_by_template(rows: list[dict]) -> tuple[np.ndarray, np.ndarray]:
-    """Hold out whole templates, not rows. Deterministic: sort ids, then take a
-    seeded sample so the same templates land in holdout on every run."""
-    template_ids = sorted({r["template_id"] for r in rows})
-    rng = np.random.RandomState(SEED)
-    n_hold = max(1, round(len(template_ids) * HOLDOUT_FRAC))
-    held = set(rng.choice(template_ids, size=n_hold, replace=False).tolist())
-    is_train = np.array([r["template_id"] not in held for r in rows])
-    return is_train, ~is_train
+def embed_cached(texts: list[str]) -> np.ndarray:
+    """Embed only texts missing from the cache. bge-m3 is deterministic, so a cached
+    vector equals a fresh one and the cache can't change the trained weights."""
+    cache: dict[str, np.ndarray] = {}
+    if CACHE_PATH.exists():
+        data = np.load(CACHE_PATH, allow_pickle=False)
+        cache = dict(zip(data["texts"].tolist(), data["vecs"]))
+    missing = sorted({t for t in texts if t not in cache})
+    if missing:
+        print(f"embedding {len(missing)} new texts via Ollama ({len(cache)} cached)")
+        cache.update(zip(missing, embed(missing)))
+        keys = sorted(cache)
+        CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        np.savez(CACHE_PATH, texts=np.array(keys), vecs=np.stack([cache[k] for k in keys]))
+    return np.stack([cache[t] for t in texts])
 
 
-def train_flag(flag: str, X_tr, y_tr, X_te, y_te) -> dict | None:
-    """One binary LogisticRegression for a flag. Skip flags with one class in train
-    (no bank/courier template carries, e.g., RF_EMOTIONAL_PRESSURE): predict() scores
-    a missing flag as 0 and the rule engine covers it."""
-    if len(np.unique(y_tr)) < 2:
-        print(f"  {flag:24s} skipped (single class in train)")
+def template_folds(rows: list[dict], k: int = N_FOLDS) -> list[tuple[np.ndarray, np.ndarray]]:
+    """GroupKFold keeps each template wholly on one side. It is deterministic, so the
+    same templates share a fold on every run."""
+    groups = [r["template_id"] for r in rows]
+    k = min(k, len(set(groups)))
+    return list(GroupKFold(n_splits=k).split(np.zeros(len(rows)), groups=groups))
+
+
+def fit_binary(X: np.ndarray, y: np.ndarray) -> LogisticRegression | None:
+    """None when y has one class: predict() then scores the flag 0 and rules cover it."""
+    if len(np.unique(y)) < 2:
         return None
-    clf = LogisticRegression(
-        class_weight="balanced", max_iter=1000, random_state=SEED
-    )
-    clf.fit(X_tr, y_tr)
-    if y_te.sum() and len(np.unique(y_te)) > 1:
-        pred = clf.predict(X_te)
-        p, r, _, _ = precision_recall_fscore_support(
-            y_te, pred, average="binary", zero_division=0
-        )
-        print(f"  {flag:24s} precision={p:.2f} recall={r:.2f} (pos={int(y_te.sum())})")
-    else:
-        print(f"  {flag:24s} no positive holdout rows")
-    return {"w": clf.coef_[0].tolist(), "b": float(clf.intercept_[0])}
+    clf = LogisticRegression(class_weight="balanced", max_iter=1000, random_state=SEED)
+    return clf.fit(X, y)
 
 
-def train_type(X_tr, types_tr, X_te, types_te) -> dict | None:
-    classes = sorted(set(types_tr))
-    if len(classes) < 2:
-        return None
-    clf = LogisticRegression(
-        class_weight="balanced", max_iter=1000, random_state=SEED
-    )
-    clf.fit(X_tr, types_tr)
-    if len(types_te):
-        acc = float((clf.predict(X_te) == np.asarray(types_te)).mean())
-        print(f"  TYPE accuracy={acc:.2f} over {len(classes)} classes")
+def oof_proba(X: np.ndarray, y: np.ndarray, folds) -> np.ndarray:
+    """Out-of-fold P(flag). A fold whose train side lacks positives predicts 0: the
+    flag can't be learned without that template, and the score should show it."""
+    p = np.zeros(len(y))
+    for tr, te in folds:
+        clf = fit_binary(X[tr], y[tr])
+        if clf is not None:
+            p[te] = clf.predict_proba(X[te])[:, 1]
+    return p
+
+
+def precision_recall(y: np.ndarray, fired: np.ndarray) -> tuple[float, float]:
+    tp = int((fired & (y == 1)).sum())
+    n_fired, n_pos = int(fired.sum()), int((y == 1).sum())
+    return (tp / n_fired if n_fired else 0.0, tp / n_pos if n_pos else 0.0)
+
+
+def pick_threshold(y: np.ndarray, p: np.ndarray, min_precision: float = MIN_PRECISION) -> dict:
+    """Lowest cut on CUT_GRID with precision >= min_precision (lowest = most recall).
+    threshold None means no cut is safe enough: the engine should use rules only."""
+    for cut in CUT_GRID:
+        fired = p >= cut
+        if not fired.any():
+            break
+        prec, rec = precision_recall(y, fired)
+        if prec >= min_precision:
+            return {"threshold": cut, "precision": round(prec, 3), "recall": round(rec, 3)}
+    prec, rec = precision_recall(y, p >= 0.5)
+    return {"threshold": None, "precision": round(prec, 3), "recall": round(rec, 3)}
+
+
+def export_type(clf: LogisticRegression) -> dict:
     order = clf.classes_.tolist()
     W, b = clf.coef_, clf.intercept_
     if len(order) == 2:
@@ -128,33 +156,76 @@ def train_type(X_tr, types_tr, X_te, types_te) -> dict | None:
     return {"classes": order, "W": W.tolist(), "b": b.tolist()}
 
 
+def fit_type(X: np.ndarray, types: list[str]) -> LogisticRegression | None:
+    if len(set(types)) < 2:
+        return None
+    clf = LogisticRegression(class_weight="balanced", max_iter=1000, random_state=SEED)
+    return clf.fit(X, types)
+
+
+def type_cv_accuracy(X: np.ndarray, types: list[str], folds) -> float:
+    t = np.asarray(types)
+    hits = 0
+    for tr, te in folds:
+        clf = fit_type(X[tr], t[tr].tolist())
+        if clf is not None:
+            hits += int((clf.predict(X[te]) == t[te]).sum())
+    return hits / len(t)
+
+
+def safe_false_alarm_rate(rows: list[dict], oof: dict[str, np.ndarray], cuts: dict) -> float:
+    """Share of SAFE rows where any flag fires at its chosen cut. This is the number
+    that matters most for elderly users: a false alarm on a real bank SMS."""
+    safe = np.array([r["type"] == "NONE" for r in rows])
+    fired = np.zeros(len(rows), dtype=bool)
+    for flag, p in oof.items():
+        cut = cuts[flag]["threshold"]
+        if cut is not None:
+            fired |= p >= cut
+    return float(fired[safe].mean()) if safe.any() else 0.0
+
+
 def main() -> None:
     rows = load_rows()
-    print(f"loaded {len(rows)} rows, embedding via Ollama...")
-    X = embed([r["text"] for r in rows])
-    tr, te = split_by_template(rows)
-    X_tr, X_te = X[tr], X[te]
-    print(f"train={tr.sum()} holdout={te.sum()} (split by template_id)\n")
+    print(f"loaded {len(rows)} rows from {len({r['template_id'] for r in rows})} templates")
+    X = embed_cached([r["text"] for r in rows])
+    folds = template_folds(rows)
+    print(f"{len(folds)}-fold CV grouped by template_id\n")
 
     flags: dict[str, dict] = {}
-    print("per-flag metrics:")
+    cuts: dict[str, dict] = {}
+    oof: dict[str, np.ndarray] = {}
+    safe = np.array([r["type"] == "NONE" for r in rows])
+    print(f"{'flag':24s} {'tpl':>3s} {'cut':>5s} {'prec':>5s} {'rec':>5s} {'safeFA':>6s}")
     for flag in ALL_FLAGS:
         y = np.array([1 if flag in r["flags"] else 0 for r in rows])
-        model = train_flag(flag, X_tr, y[tr], X_te, y[te])
-        if model is not None:
-            flags[flag] = model
+        n_tpl = len({r["template_id"] for r in rows if flag in r["flags"]})
+        clf = fit_binary(X, y)
+        if clf is None:
+            print(f"{flag:24s} {n_tpl:3d}  skipped (no positive rows)")
+            continue
+        flags[flag] = {"w": clf.coef_[0].tolist(), "b": float(clf.intercept_[0])}
+        oof[flag] = oof_proba(X, y, folds)
+        cuts[flag] = {**pick_threshold(y, oof[flag]), "templates": n_tpl}
+        c = cuts[flag]
+        cut_s = f"{c['threshold']:.2f}" if c["threshold"] is not None else " none"
+        # SAFE rows this flag alone would wrongly fire on: shows where SAFE templates are thin.
+        fa = int((oof[flag][safe] >= c["threshold"]).sum()) if c["threshold"] is not None else 0
+        print(f"{flag:24s} {n_tpl:3d} {cut_s:>5s} {c['precision']:5.2f} {c['recall']:5.2f} {fa:6d}")
 
-    print("\ntype model:")
     types = [r["type"] for r in rows]
-    type_model = train_type(
-        X_tr, [types[i] for i in np.where(tr)[0]],
-        X_te, [types[i] for i in np.where(te)[0]],
-    )
+    type_clf = fit_type(X, types)
+    print(f"\ntype CV accuracy={type_cv_accuracy(X, types, folds):.2f} over {len(set(types))} classes")
+    print(f"SAFE false-alarm rate at chosen cuts={safe_false_alarm_rate(rows, oof, cuts):.3f}")
 
-    weights = {"model": EMBED_MODEL, "dim": EMBED_DIM, "flags": flags, "type": type_model}
+    weights = {
+        "model": EMBED_MODEL, "dim": EMBED_DIM, "flags": flags,
+        "type": export_type(type_clf) if type_clf is not None else None,
+    }
     WEIGHTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     WEIGHTS_PATH.write_text(json.dumps(weights), encoding="utf-8")
-    print(f"\nwrote {WEIGHTS_PATH} ({len(flags)} flags, type={'yes' if type_model else 'no'})")
+    THRESHOLDS_PATH.write_text(json.dumps(cuts, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(f"\nwrote {WEIGHTS_PATH.name} ({len(flags)} flags) and {THRESHOLDS_PATH.name}")
 
 
 if __name__ == "__main__":

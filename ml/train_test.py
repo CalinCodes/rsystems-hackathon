@@ -1,5 +1,5 @@
 """Co-located tests for train.py. No network: embed() is swapped for seeded fake vectors,
-so these check the export contract, not model quality."""
+so these check the CV logic and the export contract, not model quality."""
 
 from __future__ import annotations
 
@@ -27,18 +27,44 @@ def _rows() -> list[dict]:
     return rows
 
 
-def test_split_holds_out_whole_templates():
-    rows = [{"template_id": f"t#{i % 5}"} for i in range(50)]
-    tr, te = t.split_by_template(rows)
-    train_ids = {r["template_id"] for r, keep in zip(rows, tr) if keep}
-    test_ids = {r["template_id"] for r, keep in zip(rows, te) if keep}
-    assert train_ids.isdisjoint(test_ids)
-    assert test_ids
+def test_folds_hold_out_whole_templates():
+    rows = [{"template_id": f"t#{i % 7}"} for i in range(70)]
+    folds = t.template_folds(rows)
+    seen_test: list[str] = []
+    for tr, te in folds:
+        train_ids = {rows[i]["template_id"] for i in tr}
+        test_ids = {rows[i]["template_id"] for i in te}
+        assert train_ids.isdisjoint(test_ids)
+        seen_test += sorted(test_ids)
+    assert sorted(seen_test) == sorted({r["template_id"] for r in rows})
 
 
-def test_split_is_deterministic():
+def test_folds_are_deterministic():
     rows = [{"template_id": f"t#{i}"} for i in range(20)]
-    assert (t.split_by_template(rows)[0] == t.split_by_template(rows)[0]).all()
+    a, b = t.template_folds(rows), t.template_folds(rows)
+    assert all((x[1] == y[1]).all() for x, y in zip(a, b))
+
+
+def test_pick_threshold_takes_lowest_cut_meeting_precision():
+    y = np.array([1, 1, 1, 0, 0])
+    p = np.array([0.95, 0.9, 0.6, 0.7, 0.1])
+    # At 0.6 the 0.7 negative fires (precision 0.75); 0.71 drops it (precision 1.0).
+    r = t.pick_threshold(y, p, min_precision=0.9)
+    assert r["threshold"] == 0.71 and r["precision"] == 1.0
+    assert r["recall"] == round(2 / 3, 3)
+
+
+def test_pick_threshold_none_when_never_precise():
+    y = np.array([0, 0, 1])
+    p = np.array([0.99, 0.98, 0.6])
+    assert t.pick_threshold(y, p)["threshold"] is None
+
+
+def test_oof_is_zero_when_fold_has_no_positives():
+    X = np.eye(4)
+    y = np.array([1, 0, 0, 0])
+    folds = [(np.array([1, 2, 3]), np.array([0]))]
+    assert t.oof_proba(X, y, folds)[0] == 0.0
 
 
 def test_export_matches_weights_contract(tmp_path, monkeypatch):
@@ -46,6 +72,8 @@ def test_export_matches_weights_contract(tmp_path, monkeypatch):
     dataset.write_text("\n".join(json.dumps(r) for r in _rows()), encoding="utf-8")
     monkeypatch.setattr(t, "DATASET_PATH", dataset)
     monkeypatch.setattr(t, "WEIGHTS_PATH", tmp_path / "weights.json")
+    monkeypatch.setattr(t, "THRESHOLDS_PATH", tmp_path / "thresholds.json")
+    monkeypatch.setattr(t, "CACHE_PATH", tmp_path / "emb_cache.npz")
     monkeypatch.setattr(t, "embed", _fake_embed)
 
     t.main()
@@ -58,3 +86,22 @@ def test_export_matches_weights_contract(tmp_path, monkeypatch):
     assert w["type"]["classes"] == ["BANK_IMPERSONATION", "NONE"]
     assert len(w["type"]["W"]) == 2 and len(w["type"]["b"]) == 2
     assert all(len(row) == 1024 for row in w["type"]["W"])
+
+    cuts = json.loads((tmp_path / "thresholds.json").read_text())
+    assert set(cuts) == {"RF_CODE_REQUEST"}
+    assert {"threshold", "precision", "recall", "templates"} <= set(cuts["RF_CODE_REQUEST"])
+
+
+def test_cache_returns_same_vectors(tmp_path, monkeypatch):
+    monkeypatch.setattr(t, "CACHE_PATH", tmp_path / "emb_cache.npz")
+    calls: list[int] = []
+
+    def counting_embed(texts):
+        calls.append(len(texts))
+        return _fake_embed(texts)
+
+    monkeypatch.setattr(t, "embed", counting_embed)
+    first = t.embed_cached(["a", "b"])
+    second = t.embed_cached(["b", "a", "c"])
+    assert calls == [2, 1]  # second call embeds only the new text
+    assert np.allclose(second[0], first[1]) and np.allclose(second[1], first[0])

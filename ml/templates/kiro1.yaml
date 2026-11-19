@@ -104,3 +104,57 @@
 - type: NONE
   flags: []
   text: "Perfect, ne vedem mâine la 10 pentru {item}. Plătesc cash la fața locului."
+
+# --- SAFE hard negatives ---
+# WHY: CV showed RF_PAYMENT_REQUEST firing on any money word ("am primit 150 lei",
+# "amenda a fost achitată"). These mention money, codes, links and fraud words but
+# ask for nothing, so the classifier must learn "request", not "topic".
+# Money already moved / receipts:
+- type: NONE
+  flags: []
+  text: "{bank}: Ați primit {amount} în contul dvs. de la {first_name}. Soldul este disponibil în aplicație."
+- type: NONE
+  flags: []
+  text: "{bank}: Tranzacția de {amount} la {shop} a fost efectuată cu succes."
+- type: NONE
+  flags: []
+  text: "{shop}: Comanda dvs. a fost plătită ({amount}). Factura se află în contul dvs. pe {official_link}."
+- type: NONE
+  flags: []
+  text: "{courier}: Coletul a fost predat. Plata ramburs de {amount} a fost încasată. Vă mulțumim!"
+- type: NONE
+  flags: []
+  text: "{shop}: Banii pentru produsul returnat, {amount}, ajung pe card în 5 zile lucrătoare."
+- type: NONE
+  flags: []
+  text: "{telco}: Factura de {amount} a fost achitată automat. Vă mulțumim!"
+- type: NONE
+  flags: []
+  text: "Mulțumesc, am primit {item}. Prețul a fost exact cum ne-am înțeles."
+- type: NONE
+  flags: []
+  text: "Bună, {first_name}! Ți-am dat înapoi cei {amount} de ieri. Mersi pentru seară!"
+# Official anti-fraud notices that use scam words:
+- type: NONE
+  flags: []
+  text: "{bank} vă avertizează: nu comunicați nimănui codurile primite prin SMS, nici dacă cineva spune că sună de la bancă."
+- type: NONE
+  flags: []
+  text: "{bank}: Nu vă cerem niciodată datele cardului, PIN-ul sau parola prin telefon, SMS sau email."
+- type: NONE
+  flags: []
+  text: "{authority}: Atenție la mesajele false care cer plata amenzilor prin link. Plățile oficiale se fac doar pe {official_link}."
+# Codes that are only shown, never requested:
+- type: NONE
+  flags: []
+  text: "{shop}: Codul dvs. de autentificare este {code}. Este valabil 5 minute."
+- type: NONE
+  flags: []
+  text: "{courier}: Codul pentru ridicarea coletului din locker este {code}."
+# Account / device notices that need no action:
+- type: NONE
+  flags: []
+  text: "{bank}: Cardul dvs. expiră luna viitoare. Cardul nou vă va fi trimis prin poștă, nu trebuie să faceți nimic."
+- type: NONE
+  flags: []
+  text: "{telco}: Reparația s-a încheiat. Nu este nevoie de nicio acțiune din partea dvs."
