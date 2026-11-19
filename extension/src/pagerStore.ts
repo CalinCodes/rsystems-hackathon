@@ -30,7 +30,8 @@ export async function saveMark(chat: string, mark: PageMark): Promise<void> {
 /** Outcome of the last alert attempt, shown on the options page. Times and codes only, never message text. */
 export interface PagerLast {
   at: number;
-  outcome: 'sent' | 'failed';
+  /** skipped = a scam happened but the settings stopped the alert (switched off, or a field is wrong). */
+  outcome: 'sent' | 'failed' | 'skipped';
   attempts: number;
   error?: string;
 }

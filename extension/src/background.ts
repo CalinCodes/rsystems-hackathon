@@ -3,7 +3,7 @@ import { analyze, embed, loadWeights } from '@ss/engine';
 import weightsJson from '../../ml/out/weights.json';
 import { shouldNotify } from './banner';
 import { cachedEmbed } from './embedCache';
-import { decidePage, sendPage } from './pager';
+import { decideAlert, sendPage } from './pager';
 import { loadMark, loadPager, saveLast, saveMark } from './pagerStore';
 import { threadKey } from './thread';
 
@@ -50,11 +50,17 @@ async function pageFamily(chat: string, s: Scenario, r: Result): Promise<void> {
   paging.add(chat);
   try {
     const cfg = await loadPager();
-    if (!cfg.enabled) return;
     const last = s.messages.at(-1);
     const lastMsg = last ? threadKey('', [{ outgoing: last.from === 'reader', text: last.text }]) : '';
     const now = Date.now();
-    if (decidePage(await loadMark(chat), r, lastMsg, now) !== 'page') return;
+    const step = decideAlert(cfg, await loadMark(chat), r, lastMsg, now);
+    // A scam the family would have been told about, but the settings stop it: say so on the options page instead of
+    // failing in silence (the test button works without "Trimite alerte", which hid this). No mark is saved, so the
+    // next message pages as soon as the settings are fixed.
+    if (!step.send) {
+      if (step.skipped !== null) await saveLast({ at: now, outcome: 'skipped', attempts: 0, error: step.skipped });
+      return;
+    }
     // Exactly ONE request per detected scam message: the mark is written BEFORE sending and there is no retry.
     // ntfy.sh limits each public IP (60-request burst, then 1 per 5 s, 250 messages a day), and at a venue every
     // laptop shares one IP, so retries and repeats used to burn the allowance and get every later alert refused.
@@ -74,11 +80,19 @@ async function pageFamily(chat: string, s: Scenario, r: Result): Promise<void> {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!isRequest(message)) return undefined;
-  void analyze(message.scenario, { weights, embedFn })
+  const { chat, scenario } = message;
+  // Rules alone answer in milliseconds; the model waits on Ollama, which can take many seconds to load bge-m3 (or
+  // hang when it is busy). A scam the rules already see pages the family NOW instead of after the model. The model
+  // only ever adds flags, so a rules-only SCAM stays SCAM, and the page mark stops the full pass paging twice.
+  const quick = analyze(scenario)
+    .then((r) => pageFamily(chat, scenario, r))
+    .catch(() => undefined);
+  void analyze(scenario, { weights, embedFn })
     .then(async (r) => {
       sendResponse(r);
+      await quick; // so the full pass is not skipped while the quick pass still holds the chat's paging slot
       // Separate try blocks: a closed tab or a notification error used to skip the reply AND the family alert.
-      await Promise.allSettled([flagTab(sender.tab?.id, message.chat, r), pageFamily(message.chat, message.scenario, r)]);
+      await Promise.allSettled([flagTab(sender.tab?.id, chat, r), pageFamily(chat, scenario, r)]);
     })
     .catch(() => sendResponse(null));
   return true; // keeps the channel open for the async reply

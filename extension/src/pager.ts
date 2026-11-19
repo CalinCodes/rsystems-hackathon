@@ -94,6 +94,19 @@ export function decidePage(mark: PageMark | undefined, r: Pick<Result, 'verdict'
   return 'page';
 }
 
+export type AlertStep = { send: true } | { send: false; skipped: 'disabled' | PagerProblem | null };
+
+/**
+ * Full decision for one analysis. skipped = null: nothing to report (not a scam, already paged, cooldown).
+ * skipped = a reason: a scam that SHOULD have paged, but the settings stop it; the options page shows why.
+ */
+export function decideAlert(cfg: PagerConfig, mark: PageMark | undefined, r: Pick<Result, 'verdict'>, lastMsg: string, now: number): AlertStep {
+  if (decidePage(mark, r, lastMsg, now) !== 'page') return { send: false, skipped: null };
+  if (!cfg.enabled) return { send: false, skipped: 'disabled' };
+  const checked = checkConfig(cfg);
+  return 'problem' in checked ? { send: false, skipped: checked.problem } : { send: true };
+}
+
 const hhmm = (d: Date): string => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
 /** ntfy JSON publish body (JSON, not headers: header values cannot carry Romanian diacritics). */
