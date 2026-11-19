@@ -33,7 +33,7 @@ const MOBILE = /^(?:\+40|0040|0)7\d{8}$/;
  * "bancadunarea.ro@evil.xyz", "bancadunarea.ro\@evil.xyz" and trailing dots all differ between hand-rolled parsers.
  * Unparseable → '' which is never official, so it gets flagged.
  */
-const hostOf = (url: string): string => {
+export const hostOf = (url: string): string => {
   try {
     const u = new URL(/^https?:\/\//i.test(url) ? url : `http://${url}`);
     return u.hostname.toLowerCase().replace(/\.$/, '').replace(/^www\./, '');
@@ -58,7 +58,7 @@ const hasExoticHost = (url: string, host: string): boolean => {
 };
 
 /** Exact match or true subdomain: "bancadunarea.ro.evil.com" must NOT pass. */
-const isOfficialHost = (host: string, site: string): boolean => host === site || host.endsWith(`.${site}`);
+export const isOfficialHost = (host: string, site: string): boolean => host === site || host.endsWith(`.${site}`);
 
 const claimedIn = (text: string): Org[] => ORGS.filter((o) => o.nameRe.test(text));
 

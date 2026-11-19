@@ -1,6 +1,6 @@
 import type { Hit, Scenario } from '@ss/contracts';
-import { normalizeText } from '../normalize';
 import { ORGS, suspiciousContact, type Org } from './contact';
+import { isPhoneNumber, senderIsOrg } from './sender';
 import { buildCtx, firstHit, perSenderMessage, type MsgCtx, type Rule } from './util';
 
 /**
@@ -46,15 +46,6 @@ export function claimedAsIdentity(norm: string): Org[] {
   return ORGS.filter((o) => claimRegexes.get(o)?.test(norm) === true);
 }
 
-const isPhoneNumber = (address: string | null): boolean => address !== null && /^[+\d\s().-]+$/.test(address) && address.replace(/\D/g, '').length >= 9;
-
-/** True when the sender id itself names the organisation (alphanumeric sender "MegaShop", or its official domain). */
-function senderIsOrg(s: Scenario['sender'], org: Org): boolean {
-  const id = normalizeText(`${s.name ?? ''} ${s.address ?? ''}`);
-  if (org.nameRe.test(id)) return true;
-  const domain = (s.address ?? '').toLowerCase().slice((s.address ?? '').lastIndexOf('@') + 1);
-  return s.address?.includes('@') === true && (domain === org.site || domain.endsWith(`.${org.site}`));
-}
 
 /**
  * Fires on a generic claim (any sender can say "sunt de la Politie"), or when a catalog organisation is claimed AND

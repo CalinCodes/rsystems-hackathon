@@ -203,3 +203,38 @@ describe('review round: addresses and hostile input', () => {
     expect(flags(msg + 'scam@evil.xyz%junk')).toContain('RF_SUSPICIOUS_CONTACT');
   });
 });
+
+describe('review round: trust only what the attacker cannot write', () => {
+  const shop = 'MegaShop: comanda dvs. a fost expediată';
+
+  it('a display name does not vouch for a phone number', () => {
+    // A landline-style number, so only the impersonation rule (not the mobile-sender contact rule) can fire.
+    const spoofed = thread([['sender', shop]], { name: 'MegaShop', address: '031 555 00 00' });
+    expect(flagsOf(spoofed)).toContain('RF_IMPERSONATION');
+  });
+  it("a catalog organisation's own phone number does verify the sender", () => {
+    const real = thread([['sender', shop]], { address: '0800 500 600' });
+    expect(flagsOf(real)).not.toContain('RF_IMPERSONATION');
+  });
+  it('a known contact is still exempt', () => {
+    const known = thread([['sender', shop]], { name: 'MegaShop', address: '031 555 00 00', known_contact: true });
+    expect(flagsOf(known)).not.toContain('RF_IMPERSONATION');
+  });
+
+  const login = 'Intrați în contul Banca Dunărea și confirmați';
+  it('writing the bank name in the text does not switch the data-request rule off', () => {
+    expect(flags(login)).toContain('RF_DATA_REQUEST');
+    expect(flags('Intrați în contul de bancă și confirmați')).toContain('RF_DATA_REQUEST');
+  });
+  it('a verified sender, or only official links, does exempt it', () => {
+    expect(flags(login, { name: 'Banca Dunărea', address: 'BancaDunarea' })).not.toContain('RF_DATA_REQUEST');
+    expect(flags('Intrați în contul de bancă pe bancadunarea.ro')).not.toContain('RF_DATA_REQUEST');
+  });
+  it('...but a lookalike link, or one lookalike among official ones, does not', () => {
+    expect(flags('Intrați în contul de bancă pe bancadunarea-x.example')).toContain('RF_DATA_REQUEST');
+    expect(flags('Intrați în contul de bancă: bancadunarea.ro sau bancadunarea-x.example')).toContain('RF_DATA_REQUEST');
+  });
+  it('a phone sender cannot use a bank-sounding name to exempt it', () => {
+    expect(flags(login, { name: 'Banca Dunărea', address: '+40 721 555 000' })).toContain('RF_DATA_REQUEST');
+  });
+});
