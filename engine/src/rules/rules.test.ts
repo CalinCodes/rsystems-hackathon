@@ -134,3 +134,20 @@ describe('review follow-ups', () => {
     expect(flags(['Nu vă vom cere niciodată să ne spuneți codul primit'])).toEqual([]);
   });
 });
+
+describe('second review round', () => {
+  it('a contrast word between denial and request cancels the denial', () => {
+    expect(flags(['Nu vom cere nimic dar instalați AnyDesk'])).toContain('RF_REMOTE_ACCESS');
+    expect(flags(['Nu vom cere niciodată să instalați AnyDesk'])).toEqual([]);
+  });
+  it('extracts hosts containing underscores', () => {
+    expect(flags(['Banca Dunărea: intrați pe my_bancadunarea.ro.evil.zzz'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('flags homoglyph and diacritic hosts that imitate a claimed organisation', () => {
+    expect(flags(['Banca Dunărea: intrați pe bаncadunarea.ro'])).toContain('RF_SUSPICIOUS_CONTACT');
+    expect(flags(['Banca Dunărea: intrați pe bancadunărea.ro'])).toContain('RF_SUSPICIOUS_CONTACT');
+  });
+  it('still accepts the real site', () => {
+    expect(flags(['Banca Dunărea: intrați pe bancadunarea.ro'])).toEqual([]);
+  });
+});

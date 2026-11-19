@@ -37,6 +37,7 @@ export const GAP = String.raw`(?:[^.!?;\n]|\.(?=\d)){0,60}`;
  */
 const DENY = /\bnu (?:(?:va|ne|vom|il|o|le) )*(?:cere\w*|cerem|solicit\w*|comunic\w*|divulg\w*|dezvalu\w*|furniz\w*|instal\w*)\b/g;
 const DENY_REACH = 40;
+const CONTRAST = /\b(?:decat|doar|dar|ci|insa|totusi|exceptand|cu exceptia|in afara de)\b/;
 
 function clauseBounds(norm: string, index: number): { start: number; end: number } {
   const before = norm.slice(0, index);
@@ -55,7 +56,10 @@ export function isDenied(norm: string, index: number): boolean {
   for (const d of norm.slice(start, end).matchAll(DENY)) {
     const dStart = start + (d.index ?? 0);
     const dEnd = dStart + d[0].length;
-    if (dStart <= index && index - dEnd <= DENY_REACH) return true;
+    if (dStart > index || index - dEnd > DENY_REACH) continue;
+    // "nu vă cerem nimic DAR instalați X": a contrast word between denial and match turns it back into a request.
+    if (dEnd < index && CONTRAST.test(norm.slice(dEnd, index))) continue;
+    return true;
   }
   return false;
 }

@@ -40,6 +40,15 @@ const hasDisguisedAuthority = (url: string): boolean => {
   return authority.includes('@') || authority.includes('\\');
 };
 
+/**
+ * Non-ASCII letters or an "xn--" label: homoglyph hosts ("bаncadunarea.ro" with a Cyrillic а) look official to a human.
+ * None of the catalog's real domains are IDNs, so any such host is suspicious on its own.
+ */
+const hasExoticHost = (url: string, host: string): boolean => {
+  const authority = url.replace(/^https?:\/\//i, '').split(/[/?#]/)[0] ?? '';
+  return /[^\x00-\x7f]/.test(authority) || host.split('.').some((l) => l.startsWith('xn--'));
+};
+
 /** Exact match or true subdomain: "bancadunarea.ro.evil.com" must NOT pass. */
 const isOfficialHost = (host: string, site: string): boolean => host === site || host.endsWith(`.${site}`);
 
@@ -53,7 +62,7 @@ function messageHits(m: MsgCtx, claimed: Org[]): Hit[] {
     const host = hostOf(url);
     // Official means official FOR THE CLAIMED ORG: a "Banca Dunărea" text linking to anaf.ro is still a mismatch.
     const official = (claimed.length > 0 ? claimed : ORGS).some((o) => isOfficialHost(host, o.site));
-    if (hasDisguisedAuthority(url) || host === '') flag(url);
+    if (hasDisguisedAuthority(url) || hasExoticHost(url, host) || host === '') flag(url);
     else if (SHORTENERS.test(host)) flag(url);
     else if (claimed.length > 0 && !official) flag(url);
     else if (claimed.length === 0 && RISKY_TLD.test(host)) flag(url);

@@ -24,7 +24,7 @@ const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/gi;
  * would stop at "bancadunarea.ro" in "bancadunarea.ro.evil.zzz" and report an official-looking host.
  */
 const URL_RE =
-  /\b(?:https?:\/\/|www\.)[^\s<>"']+|(?<![\w@.-])[a-z0-9-]+(?:\.[a-z0-9-]+)+(?![\w-]|\.\w)(?:\/[^\s<>"']*)?/gi;
+  /\b(?:https?:\/\/|www\.)[^\s<>"']+|(?<![\p{L}\p{N}_@.-])[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+(?![\p{L}\p{N}_-]|\.[\p{L}\p{N}_])(?:\/[^\s<>"']*)?/giu;
 
 const KNOWN_TLDS = new Set(
   'ro com net org eu info xyz top click link app online site shop store live icu vip club biz cc me co io ly gy gd gl example'.split(' '),
@@ -35,7 +35,7 @@ function looksLikeUrl(token: string): boolean {
   if (/^(?:https?:\/\/|www\.)/i.test(token)) return true;
   const labels = (token.split('/')[0] ?? '').toLowerCase().split('.');
   const tld = labels[labels.length - 1] ?? '';
-  return KNOWN_TLDS.has(tld) || (labels.length >= 3 && /^[a-z]{2,24}$/.test(tld));
+  return KNOWN_TLDS.has(tld) || (labels.length >= 3 && /^\p{L}{2,24}$/u.test(tld));
 }
 // Romanian numbers: +40 / 0040 / 0 prefix then 9 digits, with optional space/dot/dash separators.
 const PHONE_RE = /(?<![\d+])(?:\+40|0040|0)[\s.-]?\d(?:[\s.-]?\d){8}(?!\d)/g;

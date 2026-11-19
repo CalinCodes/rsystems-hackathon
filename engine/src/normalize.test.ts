@@ -47,3 +47,8 @@ it('finds OTP-like codes but not phones or amounts', () => {
 it('does not let an email-looking userinfo hide a link', () => {
   expect(extractUrls('Intrați: https://bancadunarea.ro@evil.xyz/login')).toEqual(['https://bancadunarea.ro@evil.xyz/login']);
 });
+
+it('extracts underscore and non-ASCII hosts as one token', () => {
+  expect(extractUrls('vezi my_site.example.ro acum')).toEqual(['my_site.example.ro']);
+  expect(extractUrls('vezi bancadunărea.ro acum')).toEqual(['bancadunărea.ro']);
+});
