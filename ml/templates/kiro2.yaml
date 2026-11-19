@@ -214,3 +214,49 @@
 - type: INVESTMENT
   flags: []
   text: "Bună ziua, aveți un minut să vă povestesc despre o oportunitate?"
+
+# ======================= ADDITIONAL SCAM TEMPLATES (variety: dvs / tu, short / long, link / no link) =======================
+- type: FAMILY_EMERGENCY
+  flags: [RF_NEW_NUMBER, RF_PAYMENT_REQUEST]
+  text: "Bună ziua, sunt fiul dvs. Telefonul mi-a căzut în apă și scriu de la {phone_unknown}. Aveți bunătatea să virați {amount} în contul unui prieten, pentru reparație."
+- type: INVESTMENT
+  flags: [RF_TOO_GOOD, RF_SUSPICIOUS_CONTACT, RF_URGENCY]
+  text: "Am început săptămâna trecută cu {amount} și acum am triplu. Intră și tu pe {fake_link}, locurile se închid azi."
+- type: ROMANCE
+  flags: [RF_EMOTIONAL_PRESSURE, RF_SECRECY]
+  text: "Nu am mai spus asta nimănui, dar tu ești special pentru mine. Să rămână secretul nostru."
+- type: JOB_OFFER
+  flags: [RF_IMPERSONATION, RF_PAYMENT_REQUEST, RF_SUSPICIOUS_CONTACT]
+  text: "{bank}: Recrutăm consilieri la distanță. Pentru înscriere achitați taxa de {amount} aici: {fake_link}"
+- type: PRIZE_LOTTERY
+  flags: [RF_TOO_GOOD, RF_URGENCY, RF_SUSPICIOUS_CONTACT]
+  text: "Sunteți al 1000-lea vizitator! Ridicați premiul de {amount} acum, numai astăzi: {fake_link}"
+- type: OTHER
+  flags: [RF_PAYMENT_REQUEST, RF_EMOTIONAL_PRESSURE]
+  text: "Colegul dvs. a pățit un accident și strângem bani pentru el. Puteți vira {amount} în contul din mesajul următor?"
+
+# ======================= ADDITIONAL SAFE HARD NEGATIVES =======================
+- type: NONE
+  flags: []
+  text: "Ți-am dat transfer de {amount}, mulțumesc că m-ai ajutat. Vedem la cafea sâmbătă?"
+- type: NONE
+  flags: []
+  text: "{bank}: Pentru siguranța dvs., nu comunicați codul {code} nimănui. Dacă nu ați cerut acest cod, sunați la numărul de pe spatele cardului."
+- type: NONE
+  flags: []
+  text: "{courier}: Livrarea de azi a fost reprogramată pentru mâine. Nu trebuie să faceți nimic."
+- type: NONE
+  flags: []
+  text: "Tată, sunt la spital cu Elena pentru un control, totul e în regulă. Te sun mai târziu."
+- type: NONE
+  flags: []
+  text: "{shop}: Comanda dvs. de {amount} a fost plătită. Factura este în contul de client pe {official_link}."
+- type: NONE
+  flags: []
+  text: "{authority}: Termenul de depunere expiră pe 25 mai. Puteți depune online pe {official_link}."
+- type: NONE
+  flags: []
+  text: "Bună ziua, interviul este confirmat pentru joi la ora 11. Nu este nevoie de nicio taxă sau de documente acum."
+- type: NONE
+  flags: []
+  text: "{bank}: Aplicația dvs. a fost actualizată. Nu trebuie să faceți nimic."
