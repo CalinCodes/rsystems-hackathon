@@ -75,6 +75,17 @@ describe('pickLocalRoVoice', () => {
   });
 });
 
+describe('saved contact asking for data', () => {
+  it('tells the reader to call that person, not a company', () => {
+    const m = bannerModel({ ...result('SUSPICIOUS'), scamType: 'OTHER' }, known);
+    expect(m?.action).toBe('Nu trimiteți nimic și sunați persoana la numărul pe care îl aveți deja salvat.');
+  });
+  it('keeps the engine action for a fake bank, even from a saved contact', () => {
+    const m = bannerModel({ ...result('SCAM'), scamType: 'BANK_IMPERSONATION' }, known);
+    expect(m?.action).toBe('Nu răspundeți.');
+  });
+});
+
 describe('shouldNotify', () => {
   it('rings once per chat and verdict, never for SAFE', () => {
     expect(shouldNotify(undefined, 'c1', result('SCAM'))).toBe(true);

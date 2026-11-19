@@ -71,7 +71,8 @@ const THREAT = re([
   String.raw`\bactiune in (?:instanta|justitie)\b|\bdat in judecata\b`,
   String.raw`\bconsecinte\w*`,
   String.raw`\bsanctiun\w*|\bpenalizar\w*`,
-  String.raw`\bvirus\w*|\binfectat\w*|\bmalware\b|\bcompromis\w*|\bhack\w*`,
+  // Not inside a web address: "https://malware.com" or "virus-scan.net" is a link, not a scare.
+  String.raw`(?<![\w./-])(?:virus\w*|infectat\w*|malware|compromis\w*|hack\w*)(?![\w-]*\.[a-z]{2,})`,
   // "calculatorul dvs. trimite date": "dvs." has a dot, so it is allowed inside the gap; other dots end the sentence.
   String.raw`\b(?:calculator\w*|computer\w*|laptop\w*|dispozitiv\w*|router\w*)\b(?:[^.!?;\n]|dvs\.){0,25}\b(?:trimite|transmite|infectat|compromis|atacat|piratat|hackuit)\w*`,
 ]);

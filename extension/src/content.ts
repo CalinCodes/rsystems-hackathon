@@ -43,8 +43,9 @@ async function check(): Promise<void> {
     return;
   }
   if (thread !== lastThread) return; // a newer read superseded this one
-  guard = { chat: chatKey, verdict: r.verdict, action: r.warning.action };
   const model = bannerModel(r, scenario);
+  // Same action as the banner: a hacked saved contact gets "call them on the saved number", not the engine's.
+  guard = { chat: chatKey, verdict: r.verdict, action: model?.action ?? r.warning.action };
   // Scenario keeps only the latest MAX_MESSAGES bubbles, so message n maps to the tail of the bubble list.
   const offset = chat.bubbles.length - scenario.messages.length;
   const raw: ElLike | undefined = r.firstAlert === null ? undefined : chat.bubbles[offset + r.firstAlert - 1];

@@ -14,6 +14,10 @@ export interface BannerModel {
 }
 
 const UNKNOWN_NOTE = 'Numărul nu este în agenda dumneavoastră.';
+// A saved contact asking for data or a code is usually a hacked account. The one useful step is to call that person
+// on the number already saved, not "the company's site" or "the number on the card".
+const KNOWN_CONTACT_ACTION = 'Nu trimiteți nimic și sunați persoana la numărul pe care îl aveți deja salvat.';
+const HACKED_CONTACT_TYPES = new Set(['OTHER', 'ACCOUNT_TAKEOVER']);
 
 /** Same words as the engine's lead sentence and the brief's verdict labels. */
 const HEADLINE: Record<BannerModel['tone'], string> = {
@@ -66,7 +70,7 @@ export function bannerModel(r: Result, s: Scenario): BannerModel | null {
     headline: HEADLINE[tone],
     body: stripLead(r.warning.ro, HEADLINE[tone]),
     note: unknown ? UNKNOWN_NOTE : null,
-    action: r.warning.action,
+    action: s.sender.known_contact && HACKED_CONTACT_TYPES.has(r.scamType) ? KNOWN_CONTACT_ACTION : r.warning.action,
     footer,
   };
 }
