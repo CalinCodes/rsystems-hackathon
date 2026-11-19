@@ -12,6 +12,10 @@ export interface BannerModel {
 }
 
 const UNKNOWN_NOTE = 'Numărul nu este în agenda dumneavoastră.';
+// A saved contact asking for data or a code is usually a hacked account. The one useful step is to call that person
+// on the number already saved, not "the company's site" or "the number on the card".
+const KNOWN_CONTACT_ACTION = 'Nu trimiteți nimic și sunați persoana la numărul pe care îl aveți deja salvat.';
+const HACKED_CONTACT_TYPES = new Set(['OTHER', 'ACCOUNT_TAKEOVER']);
 
 /** Unknown = WhatsApp shows a phone number, not a saved name. */
 export const isUnknownSender = (s: Scenario): boolean => !s.sender.known_contact && s.sender.address !== null;
@@ -41,7 +45,7 @@ export function bannerModel(r: Result, s: Scenario): BannerModel | null {
     icon: r.verdict === 'SCAM' ? '⛔' : '⚠️',
     body: r.warning.ro,
     note: unknown ? UNKNOWN_NOTE : null,
-    action: r.warning.action,
+    action: s.sender.known_contact && HACKED_CONTACT_TYPES.has(r.scamType) ? KNOWN_CONTACT_ACTION : r.warning.action,
     footer,
   };
 }

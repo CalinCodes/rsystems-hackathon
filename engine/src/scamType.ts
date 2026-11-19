@@ -44,7 +44,9 @@ const DECISIONS: [ScamType, (c: TypeCtx) => boolean][] = [
   // Before account takeover: a fake employer asking for an ID copy and a "cod de verificare" is a job scam.
   ['JOB_OFFER', (c) => words(c, JOB) && has(c, 'RF_DATA_REQUEST', 'RF_TOO_GOOD', 'RF_PAYMENT_REQUEST')],
   ['ACCOUNT_TAKEOVER', (c) => has(c, 'RF_CODE_REQUEST') && !c.sites.has('bancadunarea.ro') && words(c, TAKEOVER)],
-  ['BANK_IMPERSONATION', (c) => (c.sites.has('bancadunarea.ro') || words(c, BANK)) && has(c, 'RF_SUSPICIOUS_CONTACT', 'RF_CODE_REQUEST', 'RF_DATA_REQUEST', 'RF_THREAT', 'RF_IMPERSONATION', 'RF_REMOTE_ACCESS')],
+  // A data request alone is not a bank story: "da-mi CNP-ul si contul tau bancar" from a friend asks ABOUT a bank
+  // account without posing as a bank. It needs a claim, a scare, a code or a bad link on top.
+  ['BANK_IMPERSONATION', (c) => (c.sites.has('bancadunarea.ro') || words(c, BANK)) && has(c, 'RF_SUSPICIOUS_CONTACT', 'RF_CODE_REQUEST', 'RF_THREAT', 'RF_IMPERSONATION', 'RF_REMOTE_ACCESS')],
   ['INVESTMENT', (c) => words(c, INVEST) && has(c, 'RF_TOO_GOOD', 'RF_PAYMENT_REQUEST', 'RF_URGENCY')],
   ['ROMANCE', (c) => words(c, ROMANCE) && has(c, 'RF_EMOTIONAL_PRESSURE', 'RF_PAYMENT_REQUEST', 'RF_CHANNEL_SWITCH')],
   ['JOB_OFFER', (c) => words(c, JOB) && has(c, 'RF_TOO_GOOD', 'RF_PAYMENT_REQUEST', 'RF_CHANNEL_SWITCH', 'RF_DATA_REQUEST')],

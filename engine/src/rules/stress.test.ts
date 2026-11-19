@@ -74,6 +74,10 @@ describe('soft flags: job pay per day, overpaying buyer, shame, secrecy, prison,
   it('emotional pressure', () => expect(flags('Mi-e rușine să le spun alor mei.')).toContain('RF_EMOTIONAL_PRESSURE'));
   it('secrecy', () => expect(flags('Nu aveți voie să spuneți familiei.')).toContain('RF_SECRECY'));
   it('threat', () => expect(flags('Altfel puteți ajunge la închisoare.')).toContain('RF_THREAT'));
+  it('a scary word inside a link is not a threat, the same word in a sentence is', () => {
+    expect(flags('Salut, intră pe site-ul meu: https://malware.com')).not.toContain('RF_THREAT');
+    expect(flags('Calculatorul are un malware, trebuie curățat.')).toContain('RF_THREAT');
+  });
   it('channel switch', () => expect(flags('Vă adaug într-un grup pe Telegram.')).toContain('RF_CHANNEL_SWITCH'));
   it('new number written as "nr"', () => expect(flags('Salut, mi-am schimbat nr, salvează-l.')).toContain('RF_NEW_NUMBER'));
 });
@@ -93,6 +97,9 @@ describe('type decision list', () => {
   });
   it('a romance hook that mentions customs is still romance', async () => {
     expect(await typeOf(['Iubirea mea, mi-e dor de tine.', 'Sunt blocat la vamă, îmi trebuie 800 de euro ca să vin. Te implor.'])).toBe('ROMANCE');
+  });
+  it('a contact asking for a CNP and a bank account is not a fake bank', async () => {
+    expect(await typeOf(['Ce mai faci?', 'Dă-mi CNP-ul tău, te rog.', 'Dă-mi și mie contul tău bancar.'])).toBe('OTHER');
   });
   it('a fake employer asking for an ID copy and a verification code is a job scam', async () => {
     expect(await typeOf(['Pentru post și salariu avem nevoie de o copie după buletin și codul de verificare primit pe SMS.'])).toBe('JOB_OFFER');
