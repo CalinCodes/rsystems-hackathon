@@ -1,24 +1,48 @@
-import type { Result } from '@ss/contracts';
+import type { Result, Scenario } from '@ss/contracts';
 
 export interface BannerModel {
-  tone: 'scam' | 'suspicious';
+  tone: 'scam' | 'suspicious' | 'info';
   icon: string;
   body: string;
+  /** Shown under the body when the sender is not a saved contact. */
+  note: string | null;
   action: string;
   /** Plain-language note on what judged the chat, for the jury's "does anything leave the laptop?". */
   footer: string;
 }
 
-/** SAFE shows nothing: a banner on every normal chat would teach people to ignore it. */
-export function bannerModel(r: Result): BannerModel | null {
-  if (r.verdict === 'SAFE') return null;
-  const modelOn = r.timingsMs.clfUnavailable !== 1 && r.timingsMs.clf !== undefined;
+const UNKNOWN_NOTE = 'Numărul nu este în agenda dumneavoastră.';
+
+/** Unknown = WhatsApp shows a phone number, not a saved name. */
+export const isUnknownSender = (s: Scenario): boolean => !s.sender.known_contact && s.sender.address !== null;
+
+/**
+ * A safe chat from a saved contact shows nothing: a banner on every normal chat would teach people to ignore it.
+ * A safe chat from an unknown number gets a calm grey note only (no badge, no notification), because that is
+ * where most scams start.
+ */
+export function bannerModel(r: Result, s: Scenario): BannerModel | null {
+  const unknown = isUnknownSender(s);
+  const modelOn = r.timingsMs.clfUnavailable !== 1;
+  const footer = `Verificat pe acest calculator${modelOn ? ', cu reguli și model AI local' : ', cu reguli'}. Mesajele nu pleacă nicăieri.`;
+  if (r.verdict === 'SAFE') {
+    if (!unknown) return null;
+    return {
+      tone: 'info',
+      icon: 'ℹ️',
+      body: 'Vă scrie un număr necunoscut, care nu este în agenda dumneavoastră.',
+      note: null,
+      action: 'Nu trimiteți bani, coduri sau date până nu aflați sigur cine este.',
+      footer,
+    };
+  }
   return {
     tone: r.verdict === 'SCAM' ? 'scam' : 'suspicious',
     icon: r.verdict === 'SCAM' ? '⛔' : '⚠️',
     body: r.warning.ro,
+    note: unknown ? UNKNOWN_NOTE : null,
     action: r.warning.action,
-    footer: `Verificat pe acest calculator${modelOn ? ', cu reguli și model AI local' : ', cu reguli'}. Mesajele nu pleacă nicăieri.`,
+    footer,
   };
 }
 

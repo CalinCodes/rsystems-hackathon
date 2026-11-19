@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Result } from '@ss/contracts';
 import { bannerModel, shouldNotify } from './banner';
 import { cachedEmbed, RETRY_AFTER_MS } from './embedCache';
+import { toScenario } from './thread';
 
 const result = (verdict: Result['verdict'], timingsMs: Record<string, number> = { clf: 1 }): Result => ({
   id: 'WhatsApp',
@@ -15,16 +16,26 @@ const result = (verdict: Result['verdict'], timingsMs: Record<string, number> = 
   timingsMs,
 });
 
+const known = toScenario('Mama', [{ outgoing: false, text: 'x' }]);
+const unknown = toScenario('\u202a+40 721 555 000\u202c', [{ outgoing: false, text: 'x' }]);
+
 describe('bannerModel', () => {
-  it('shows nothing for SAFE', () => {
-    expect(bannerModel(result('SAFE'))).toBeNull();
+  it('shows nothing for a SAFE chat with a saved contact', () => {
+    expect(bannerModel(result('SAFE'), known)).toBeNull();
   });
-  it('uses the engine warning and says whether the local model ran', () => {
-    const on = bannerModel(result('SCAM'));
+  it('shows a calm grey note for a SAFE chat with an unknown number', () => {
+    const m = bannerModel(result('SAFE'), unknown);
+    expect(m?.tone).toBe('info');
+    expect(m?.body).toContain('număr necunoscut');
+  });
+  it('uses the engine warning, adds the unknown-number note, and says whether the local model ran', () => {
+    const on = bannerModel(result('SCAM'), unknown);
     expect(on).toMatchObject({ tone: 'scam', body: 'Atenție, pare o țeapă! Text.', action: 'Nu răspundeți.' });
+    expect(on?.note).toBe('Numărul nu este în agenda dumneavoastră.');
     expect(on?.footer).toContain('model AI local');
-    const off = bannerModel(result('SUSPICIOUS', { clf: 1, clfUnavailable: 1 }));
+    const off = bannerModel(result('SUSPICIOUS', { clf: 1, clfUnavailable: 1 }), known);
     expect(off?.tone).toBe('suspicious');
+    expect(off?.note).toBeNull();
     expect(off?.footer).not.toContain('model AI');
   });
 });

@@ -7,6 +7,7 @@ const MARK_CLASS = 'scam-shield-first-alert';
 const TONES: Record<BannerModel['tone'], { bg: string; fg: string; border: string }> = {
   scam: { bg: '#fdecea', fg: '#5f1410', border: '#b3261e' },
   suspicious: { bg: '#fff4e0', fg: '#4a2c00', border: '#a15c00' },
+  info: { bg: '#eef1f5', fg: '#1f2933', border: '#52606d' },
 };
 
 /** Draw, replace or remove the warning banner at the top of the window. */
@@ -24,6 +25,9 @@ export function renderBanner(model: BannerModel | null, onDismiss: () => void): 
   const body = document.createElement('p');
   body.style.cssText = 'margin:0 0 8px;font-size:20px;font-weight:600;';
   body.textContent = `${model.icon} ${model.body}`;
+  const note = document.createElement('p');
+  note.style.cssText = 'margin:0 0 8px;';
+  note.textContent = model.note ?? '';
   const action = document.createElement('p');
   action.style.cssText = 'margin:0 0 8px;font-weight:600;';
   action.textContent = `Ce să faceți: ${model.action}`;
@@ -40,7 +44,7 @@ export function renderBanner(model: BannerModel | null, onDismiss: () => void): 
     onDismiss();
     box.remove();
   });
-  box.append(body, action, footer, close);
+  box.append(body, ...(model.note ? [note] : []), action, footer, close);
   document.body.append(box);
 }
 
